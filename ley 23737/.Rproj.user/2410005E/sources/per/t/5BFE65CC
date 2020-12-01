@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1606835607608.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "5BFE65CC",
+    "lastKnownWriteTime" : 4412750543122677053,
+    "last_content_update" : 1606835607608,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "AD6FC670",
+        "caption" : "sneep",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=sneep&cache_key=AD6FC670",
+        "displayedObservations" : 1135230,
+        "environment" : "",
+        "expression" : "sneep",
+        "object" : "sneep",
+        "preview" : 0,
+        "totalObservations" : 1135230,
+        "variables" : 87
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

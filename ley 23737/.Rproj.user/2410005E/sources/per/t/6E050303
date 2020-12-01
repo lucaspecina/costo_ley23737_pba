@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1606846433573.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "6E050303",
+    "lastKnownWriteTime" : 32370099070697569,
+    "last_content_update" : 1606846433573,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "7B4C73C",
+        "caption" : "presos_porcen23737_por_anio_prov",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=presos_porcen23737_por_anio_prov&cache_key=7B4C73C",
+        "displayedObservations" : "42",
+        "environment" : "",
+        "expression" : "presos_porcen23737_por_anio_prov",
+        "object" : "presos_porcen23737_por_anio_prov",
+        "preview" : "0",
+        "totalObservations" : "42",
+        "variables" : "20"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

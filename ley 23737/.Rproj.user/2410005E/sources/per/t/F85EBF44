@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1606835265485.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1712428890",
+    "id" : "F85EBF44",
+    "lastKnownWriteTime" : 1606852335,
+    "last_content_update" : 1606852335602,
+    "path" : "C:/Users/Usuario/Desktop/Lucas/1- pe/7- ley 23737/ley 23737/procesamiento datos sneep.Rmd",
+    "project_path" : "procesamiento datos sneep.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "cursorPosition" : "264,0",
+        "scrollLine" : "229",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

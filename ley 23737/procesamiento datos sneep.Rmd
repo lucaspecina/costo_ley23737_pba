@@ -1,0 +1,315 @@
+---
+title: "Actualización datos ley 23737"
+output: html_notebook
+---
+
+SNEEP cargo los datos de 2019. Hay que actualizar la misma info q teniamos hasta 2018.
+- https://github.com/datos-justicia-argentina/Sistema-Nacional-de-Estadisticas-sobre-Ejecucion-de-la-Pena-SNEEP/blob/master/Sistema-Nacional-de-Estadisticas-sobre-Ejecucion-de-la-Pena-SNEEP-metadata.md
+- http://datos.jus.gob.ar/dataset/sneep
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(tidyr)
+
+sneep <- read_csv("C:/Users/Usuario/Desktop/Lucas/1- pe/7- ley 23737/data/sneep-unificado-2002-2019.csv")
+
+```
+
+Todos los delitos provinciales y de PBA (les saco los federales y dejo solo PBA)
+
+```{r}
+
+# esto deja solo las provinciales
+provinciales <- sneep %>% filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')
+
+# delitos totales de la PBA
+pba <- provinciales %>% filter(provincia_descripcion=='Buenos Aires')
+
+```
+
+Delitos ley 23737 de PBA
+
+```{r}
+
+# ley 23737
+ley23737_pba <- pba %>%
+  
+  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)'))
+
+```
+
+Analisis basicos para la PBA
+---
+
+Cantidad de presos totales por año
+```{r}
+
+# cantidad de presos totales
+presos_total_por_anio <- pba %>% group_by(anio_censo) %>% summarise(presos_totales= n())
+# cantidad de presos por ley23737
+presos_ley23737_por_anio <- ley23737_pba %>% group_by(anio_censo) %>% summarise(presos_ley23737= n())
+# joineo
+presos_porcen23737_por_anio <- presos_total_por_anio %>% inner_join(presos_ley23737_por_anio, by='anio_censo')
+# calculo porcentaje
+presos_porcen23737_por_anio <- presos_porcen23737_por_anio %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+
+print(presos_porcen23737_por_anio)
+
+```
+
+Cantidad de presos por 23737 por año
+```{r}
+
+data_plot <- presos_porcen23737_por_anio %>% pivot_longer(c(presos_totales,presos_ley23737), names_to='tipo', values_to='cantidad') 
+  
+ggplot(data_plot, aes(x=anio_censo,y=cantidad,color=tipo)) + geom_line() + geom_point() +
+    labs(title="Provincia de Buenos Aires",x="Año de censo", y = "Cantidad de presos")
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+Analisis para todas las provincias
+---
+Desde 2016
+Buenos Aires, Chaco, Cordoba, Formosa, Salta, Entre Rios (18/19), Santiago del Estero (18/19), CABA (19)
+
+Delitos ley 23737 de provincias
+
+```{r}
+
+# ley 23737
+ley23737_provs <- provinciales %>%
+  
+  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
+  
+  filter(provincia_id==jurisdiccion_id)
+
+```
+
+
+Cantidad de presos totales por año
+```{r}
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_totales= n())
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_provs %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_ley23737= n())
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
+# calculo porcentaje
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+          filter(
+              (provincia_descripcion=='Buenos Aires') |
+                (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+                (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+                (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+                (provincia_descripcion=='Salta' & anio_censo>=2014) |
+                (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+            )
+
+print(presos_porcen23737_por_anio_prov)
+
+```
+
+Cantidad de presos por 23737 por año
+```{r}
+
+ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737,color=provincia_descripcion)) + geom_line() + geom_point() +
+    labs(title="Provincias elegidas",x="Año de censo", y = "Porcentaje de presos por 23737")
+
+```
+
+Por provincia y por genero
+---
+Le agrego cuatro columnas : mujeres_total, mujeres_droga, varones_total, varones_droga
+
+```{r}
+
+# ley 23737
+ley23737_provs <- provinciales %>%
+  
+  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
+  
+  filter(provincia_id==jurisdiccion_id)
+
+```
+
+
+Cantidad de presos totales por año
+```{r}
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_totales= n())
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_provs %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_ley23737= n())
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
+
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+          filter(
+              (provincia_descripcion=='Buenos Aires') |
+                (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+                (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+                (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+                (provincia_descripcion=='Salta' & anio_censo>=2014) |
+                (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+            )
+
+
+
+# POR GENERO
+mujeres_total <- provinciales %>% filter(genero_descripcion=='Femenino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(mujeres_total= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(mujeres_total,by=c('anio_censo','provincia_descripcion'))
+
+mujeres_droga <- ley23737_provs %>% filter(genero_descripcion=='Femenino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(mujeres_droga= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(mujeres_droga,by=c('anio_censo','provincia_descripcion'))
+
+varones_total <- provinciales %>% filter(genero_descripcion=='Masculino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(varones_total= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(varones_total,by=c('anio_censo','provincia_descripcion'))
+
+varones_droga <- ley23737_provs %>% filter(genero_descripcion=='Masculino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(varones_droga= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(varones_droga,by=c('anio_censo','provincia_descripcion'))
+
+transexual_total <- provinciales %>% filter(genero_descripcion=='Transexual') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(transexual_total= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(transexual_total,by=c('anio_censo','provincia_descripcion'))
+
+transexual_droga <- ley23737_provs %>% filter(genero_descripcion=='Transexual') %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(transexual_droga= n())
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(transexual_droga,by=c('anio_censo','provincia_descripcion'))
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+# calculo porcentajes
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+# de total de GENERO, cuantas son por droga
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
+      mujeres_porcen_droga = mujeres_droga/mujeres_total*100,
+      varones_porcen_droga = varones_droga/varones_total*100,
+      transexuales_porcen_droga = transexual_droga/transexual_total*100)
+# del total de delitos, que porcentaje por genero
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
+      total_porcen_mujeres = mujeres_total/(mujeres_total+varones_total+transexual_total)*100,
+      total_porcen_varones = varones_total/(mujeres_total+varones_total+transexual_total)*100,
+      total_porcen_transexuales = transexual_total/(mujeres_total+varones_total+transexual_total)*100)
+# de delitos droga, que porcentaje por genero
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
+      droga_porcen_mujeres = mujeres_droga/(mujeres_droga+varones_droga+transexual_droga)*100,
+      droga_porcen_varones = varones_droga/(mujeres_droga+varones_droga+transexual_droga)*100,
+      droga_porcen_transexuales = transexual_droga/(mujeres_droga+varones_droga+transexual_droga)*100)
+
+presos_porcen23737_por_anio_prov
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+Procesados y condenados por droga y no droga
+---
+
+Primero saco los otros que no sean condenados y procesados y a eso le aplico lo de provinciales
+```{r}
+
+provinciales <- sneep %>% filter(situacion_legal_descripcion=='Condenado' | situacion_legal_descripcion=='Condenado') %>%
+  filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')
+
+```
+
+```{r}
+# delitos por NO ley 23737
+NOdroga_provs <- provinciales %>%
+  
+  filter(
+    ((delito1_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito1_descripcion))) & 
+    ((delito2_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito2_descripcion))) &
+    ((delito3_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito3_descripcion))) & 
+    ((delito4_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito4_descripcion))) &
+    ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) %>%
+  filter(provincia_id==jurisdiccion_id)
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```

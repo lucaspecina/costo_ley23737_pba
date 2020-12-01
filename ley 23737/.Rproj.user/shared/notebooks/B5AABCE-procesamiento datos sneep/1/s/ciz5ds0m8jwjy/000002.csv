@@ -1,0 +1,7 @@
+"0",""
+"0","# esto deja solo las provinciales"
+"0","provinciales <- sneep %>% filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')"
+"0",""
+"0","# delitos totales de la PBA"
+"0","pba <- provinciales %>% filter(provincia_descripcion=='Buenos Aires')"
+"0",""

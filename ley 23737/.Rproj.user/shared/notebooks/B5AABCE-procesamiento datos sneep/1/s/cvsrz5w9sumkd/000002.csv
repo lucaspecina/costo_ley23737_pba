@@ -1,0 +1,4 @@
+"0",""
+"0","provinciales <- sneep %>% filter(situacion_legal_descripcion=='Condenado' | situacion_legal_descripcion=='Condenado') %>%"
+"0","  filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')"
+"0",""
