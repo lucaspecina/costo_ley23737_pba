@@ -14,7 +14,8 @@ library(ggplot2)
 library(readr)
 library(tidyr)
 
-sneep <- read_csv("C:/Users/Usuario/Desktop/Lucas/1- pe/7- ley 23737/data/sneep-unificado-2002-2019.csv")
+# sneep <- read_csv("C:/Users/Usuario/Desktop/Lucas/1- pe/7- ley 23737/data/sneep-unificado-2002-2019.csv")
+sneep <- read_csv("/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/presos 23737/data/sneep-unificado-2002-2019.csv")
 
 ```
 
@@ -241,37 +242,104 @@ Procesados y condenados por droga y no droga
 Primero saco los otros que no sean condenados y procesados y a eso le aplico lo de provinciales
 ```{r}
 
-provinciales <- sneep %>% filter(situacion_legal_descripcion=='Condenado' | situacion_legal_descripcion=='Condenado') %>%
+provinciales <- sneep %>% filter((situacion_legal_descripcion=='Procesado') | (situacion_legal_descripcion=='Condenado')) %>%
   filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')
 
 ```
 
+Dejo solo los que no son de drogas
 ```{r}
 # delitos por NO ley 23737
 NOdroga_provs <- provinciales %>%
-  
   filter(
     ((delito1_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito1_descripcion))) & 
     ((delito2_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito2_descripcion))) &
     ((delito3_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito3_descripcion))) & 
     ((delito4_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito4_descripcion))) &
     ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) %>%
-  filter(provincia_id==jurisdiccion_id)
+  filter(provincia_id==jurisdiccion_id) %>%
+  filter(
+    (provincia_descripcion=='Buenos Aires') |
+      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+      (provincia_descripcion=='Salta' & anio_censo>=2014) |
+      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+  )
+
 
 ```
 
+Saco los numeros y porcentajes de procesados para los no droga
+
 ```{r}
 
+procesados_NOdroga <- NOdroga_provs %>% filter(situacion_legal_descripcion=='Procesado') %>%
+  group_by(anio_censo,provincia_descripcion) %>% summarise(procesados_NOdroga= n())
+
+condenados_NOdroga <- NOdroga_provs %>% filter(situacion_legal_descripcion=='Condenado') %>%
+  group_by(anio_censo,provincia_descripcion) %>% summarise(condenados_NOdroga= n())
+
+# join
+procesados_porcen_NOdroga <- procesados_NOdroga %>% inner_join(condenados_NOdroga, by=c('anio_censo','provincia_descripcion'))
+# calculo porcentajes
+procesados_porcen_NOdroga <- procesados_porcen_NOdroga %>% mutate(procesados_porcen_NOdroga = procesados_NOdroga/(procesados_NOdroga+condenados_NOdroga))
+```
+
+Dejo solo los que son de drogas
+```{r}
+# delitos por NO ley 23737
+droga_provs <- provinciales %>%
+    filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+            delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
+  filter(provincia_id==jurisdiccion_id) %>%
+  filter(
+    (provincia_descripcion=='Buenos Aires') |
+      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+      (provincia_descripcion=='Salta' & anio_censo>=2014) |
+      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+  )
 
 
 ```
 
+
+Saco los numeros y porcentajes de procesados para los de droga
+
 ```{r}
 
+procesados_droga <- droga_provs %>% filter(situacion_legal_descripcion=='Procesado') %>%
+  group_by(anio_censo,provincia_descripcion) %>% summarise(procesados_droga= n())
+
+condenados_droga <- droga_provs %>% filter(situacion_legal_descripcion=='Condenado') %>%
+  group_by(anio_censo,provincia_descripcion) %>% summarise(condenados_droga= n())
+
+# join
+procesados_porcen_droga <- procesados_droga %>% inner_join(condenados_droga, by=c('anio_censo','provincia_descripcion'))
+# calculo porcentajes
+procesados_porcen_droga <- procesados_porcen_droga %>% mutate(procesados_porcen_droga = procesados_droga/(procesados_droga+condenados_droga))
+```
+
+Joineo los resultados de drogas y no drogas
+
+```{r}
+
+procesados_porcen_todos <- procesados_porcen_droga %>% inner_join(procesados_porcen_NOdroga, by=c('anio_censo','provincia_descripcion'))
+
+# hago la resta
+procesados_porcen_todos <- procesados_porcen_todos %>% mutate(diferencia_procesados = procesados_porcen_droga - procesados_porcen_NOdroga)
 ```
 
 ```{r}
-
+ggplot(procesados_porcen_todos, aes(x=anio_censo,y=diferencia_procesados,color=provincia_descripcion)) + geom_line() + geom_point() +
+    labs(title="Diferencia de porcentajes entre drogas y no drogas (positivo es mayor droga)",x="Año de censo", y = "Diferencia de porcentajes entre drogas y no drogas")
 ```
 
 ```{r}
