@@ -289,7 +289,7 @@ procesados_porcen_NOdroga <- procesados_porcen_NOdroga %>% mutate(procesados_por
 
 Dejo solo los que son de drogas
 ```{r}
-# delitos por NO ley 23737
+# delitos por ley 23737
 droga_provs <- provinciales %>%
     filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
@@ -346,20 +346,80 @@ ggplot(procesados_porcen_todos, aes(x=anio_censo,y=diferencia_procesados,color=p
 
 ```
 
+
+Porcentaje por ley 23737 por cada unidad
+---
+
+No droga dataset y agrupado
 ```{r}
+
+# delitos por NO ley 23737
+total_provs <- provinciales %>%
+  filter(provincia_id==jurisdiccion_id) %>%
+  filter(
+    (provincia_descripcion=='Buenos Aires') |
+      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+      (provincia_descripcion=='Salta' & anio_censo>=2014) |
+      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+  )
+
+
+
+# hago el agrupamiento tambien por unidad
+total_unidades <- total_provs %>% group_by(anio_censo,provincia_descripcion, establecimiento_descripcion) %>%
+      summarise(cantidad_total = n())
 
 ```
 
+Droga dataset y agrupado
 ```{r}
+# delitos por ley 23737
+droga_provs <- provinciales %>%
+    filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+            delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+            delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
+  filter(provincia_id==jurisdiccion_id) %>%
+  filter(
+    (provincia_descripcion=='Buenos Aires') |
+      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+      (provincia_descripcion=='Salta' & anio_censo>=2014) |
+      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
+  )
+
+
+droga_unidades <- droga_provs %>% group_by(anio_censo,provincia_descripcion, establecimiento_descripcion) %>%
+      summarise(cantidad_droga = n())
 
 ```
 
+
+Join y calculos
 ```{r}
 
+unidades <- total_unidades %>% inner_join(droga_unidades, by=c('anio_censo','provincia_descripcion','establecimiento_descripcion'))
+
+unidades <- unidades %>% mutate(prop_droga = cantidad_droga / cantidad_total * 100)
+
+unidades_pba_2019 <- unidades %>% filter(provincia_descripcion == 'Buenos Aires' & anio_censo==2019) %>% arrange(desc(cantidad_total))
+
+# tomando las 20 unidades con mas presos, el porcentaje promedio de presos x droga es
+mean(unidades_pba_2019 %>% head(20) %>% pull(prop_droga)) # 12.35 %
 ```
 
 ```{r}
+ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram(aes(y=..density..), colour="black", fill="white") + geom_density(alpha=.2, fill="#FF6666") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 5))
 
+ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram( colour="black", fill="white") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 5))
 ```
 
 ```{r}

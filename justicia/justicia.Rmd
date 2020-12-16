@@ -1,0 +1,481 @@
+---
+title: "Evaluación de costos Poder Judicial y MP PBA 2018/2019 Ley 23.737"
+output: html_notebook
+---
+
+Aclaraciones metodológicas: 
+---
+- Calculo mínimo solo con magistrades y solo sobre el sueldo base. 
+- NO contamos: magistrades SCBA, adjuntos, funcionarios y empleades. 
+- NO contamos gasto por pericias. 
+
+Para todas las cuentas utilizamos los archivos PDF “Escala Salarial 2018” y “Escala salarial 2019”. 
+
+#### Categorias
+```{r}
+
+categoria.22.18 <- 47917*2+49778*4+53500*2+55360*1+60478*2+61408
+categoria.22.19 <- 65000*2+66014*2+68470*2+76822*2+79831*4
+
+categoria.21.18 <- 40823*2+42408*4+45579*2+47164*1+51524*2+52316
+categoria.21.19 <- 55000*2+56240*2+58333*2+65448*2+68012*4
+
+categoria.20.18 <- 35123*2+36487*4+39215*2+40579*1+44330*2+45012
+categoria.20.19 <- 46000*2+48388*2+50188*2+56310*2+58515*4
+
+categoria.1925.18 <- 31957*2+33198*4+35680*2+36921*1+40334*2+40955
+categoria.1925.19 <- 43000*2+44026*2+45664*2+51234*2+53241*4
+
+categoria.19.18 <- 29508*2+30654*4+32946*2+34092*1+37243*2+37816
+categoria.19.19 <- 39500*2+40652*2+42165*2+47308*2+49161*4
+
+categoria.1875.18 <- 28671*2+29785*4+32012*2+33125*1+36187*2+36744
+categoria.1875.19 <- 38500*2+39500*2+40969*2+45967*2+47767*4
+
+
+```
+
+Suprema Corte
+---
+No contamos con información que nos permita calcular. 
+
+Tribunal de Casación 
+---
+- 8 jueces/zas categoría 22 completa 
+- 2 jueces/zas categoría 22 30% (subrogantes)
+
+*El número de magistradxs lo obtuvimos de relevar la página de la SC el 14/12/2020 y revisar la integración del Tribunal durante el 2018 y 2019. El proporcional de su salario lo calculamos en función de estadísticas realizadas por la Sala I del mencionado Tribunal, es el Word “Porcentajes casación ley 23.737”. 
+
+```{r}
+
+casacion.porcen.18 <- 0.1145
+casacion.porcen.19 <- 0.1068
+
+casacion.cantidad.juez <- 8 + (0.3*2)
+
+casacion.costo.18 <- casacion.porcen.18*categoria.22.18*casacion.cantidad.juez
+casacion.costo.19 <- casacion.porcen.19*categoria.22.19*casacion.cantidad.juez
+
+print(paste0('Costo casación 2018: $', casacion.costo.18))
+print(paste0('Costo casación 2019: $', casacion.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 12 secretarios/as Poder Judicial Categoría 20 completa. Mismo proporcional que magistradxs. 
+- 12 auxiliares letradxs Poder Judicial Categoría 19.25 completa. Mismo proporcional que magistradxs. 
+
+```{r}
+
+casacion.cantidad.secre <- 12
+casacion.cantidad.auxi <- 12
+
+ad.casacion.costo.18 <- (casacion.porcen.18*categoria.20.18*casacion.cantidad.secre) + (casacion.porcen.18*categoria.1925.18*casacion.cantidad.auxi)
+ad.casacion.costo.19 <- (casacion.porcen.19*categoria.20.19*casacion.cantidad.secre) + (casacion.porcen.19*categoria.1925.19*casacion.cantidad.auxi)
+
+print(paste0('Costo casación 2018 (con secre y auxi): $', casacion.costo.18 + ad.casacion.costo.18))
+print(paste0('Costo casación 2019 (con secre y auxi): $', casacion.costo.19 + ad.casacion.costo.19))
+```
+
+
+Fiscal y defensor ante la Casación
+---
+
+- 1 fiscal categoría 22 completa
+- 1 defensor categoría 22 completa 
+
+*El número de magistradxs lo obtuvimos de relevar la página de la SC el 14/12/2020 y revisar la integración del Tribunal durante el 2018 y 2019. El proporcional de su salario lo calculamos en función de estadísticas realizadas por la Sala I del mencionado Tribunal, es el Word “Porcentajes casación ley 23.737”. 
+
+```{r}
+
+fiscal.casacion.porcen.18 <- 0.1145
+fiscal.casacion.porcen.19 <- 0.1068
+
+categoria.22.18 <- 47917*2+49778*4+53500*2+55360*1+60478*2+61408
+categoria.22.19 <- 65000*2+66014*2+68470*2+76822*2+79831*4
+
+fiscal.casacion.cantidad <- 2
+
+fiscal.casacion.costo.18 <- fiscal.casacion.porcen.18*categoria.22.18*fiscal.casacion.cantidad
+fiscal.casacion.costo.19 <- fiscal.casacion.porcen.19*categoria.22.19*fiscal.casacion.cantidad
+
+print(paste0('Costo fiscal y defensor casación 2018: $', fiscal.casacion.costo.18))
+print(paste0('Costo fiscal y defensor casación 2019: $', fiscal.casacion.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 2 secretarios/as Ministerio Público categoría 20 completa. Mismo proporcional que magistradxs.
+- 2 auxiliares letradxs Ministerio Público Categoría 19.25 completa. Mismo proporcional que magistradxs. 
+```{r}
+
+fiscal.casacion.cantidad.secre <- 2
+fiscal.casacion.cantidad.auxi <- 2
+
+ad.fiscal.casacion.costo.18 <- (fiscal.casacion.porcen.18*categoria.20.18*fiscal.casacion.cantidad.secre) + (fiscal.casacion.porcen.18*categoria.1925.18*fiscal.casacion.cantidad.auxi)
+ad.fiscal.casacion.costo.19 <- (fiscal.casacion.porcen.19*categoria.20.19*fiscal.casacion.cantidad.secre) + (fiscal.casacion.porcen.19*categoria.1925.19*fiscal.casacion.cantidad.auxi)
+
+print(paste0('Costo fiscal y defensor casación 2018 (con secre y auxi): $', fiscal.casacion.costo.18 + ad.fiscal.casacion.costo.18))
+print(paste0('Costo fiscal y defensor casación 2019 (con secre y auxi): $', fiscal.casacion.costo.19 + ad.fiscal.casacion.costo.19))
+```
+
+Cámaras departamentales
+---
+
+- 92 jueces/zas categoría 21 completa 
+- 2 jueces/zas categoría 21 30% (subrogantes)
+
+*El número de magistradxs lo obtuvimos de relevar la página de la SC el 14/12/2020. El proporcional de su salario lo calculamos en función de las estadísticas del MP sobre cantidad de IPP por ley 23.737. A su vez, a los fines de estas estimaciones, consideramos que la disminución de caudal de trabajo entre Juzgado de Garantías y Tribunales se da de modo proporcional para cada delito. El archivo que tiene los porcentajes de este fuero es el Excel “Fuero Criminal y Correccional 2018 2019”. 
+
+```{r}
+
+camaras.porcen.18 <- 0.0687
+camaras.porcen.19 <- 0.089
+
+categoria.21.18 <- 40823*2+42408*4+45579*2+47164*1+51524*2+52316
+categoria.21.19 <- 55000*2+56240*2+58333*2+65448*2+68012*4
+
+camaras.cantidad <- 92 + (0.3 * 2) # jueces sueldo completo + (cantidad sub * sueldo prop)
+
+camaras.costo.18 <- camaras.porcen.18*categoria.21.18*camaras.cantidad
+camaras.costo.19 <- camaras.porcen.19*categoria.21.19*camaras.cantidad
+
+print(paste0('Costo camaras departamentales 2018: $', camaras.costo.18))
+print(paste0('Costo camaras departamentales 2019: $', camaras.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 111 secretarios/as Poder Judicial categoría 19.25 completa. Mismo proporcional que magistradxs.   
+- 111 auxiliares letradxs Poder Judicial categoría 19 completa. Mismo proporcional que magistradxs.  
+```{r}
+
+camaras.cantidad.secre <- 111
+camaras.cantidad.auxi <- 111
+
+ad.camaras.costo.18 <- (camaras.porcen.18*categoria.1925.18*camaras.cantidad.secre) + (camaras.porcen.18*categoria.19.18*camaras.cantidad.auxi)
+
+ad.camaras.costo.19 <- (camaras.porcen.19*categoria.1925.19*camaras.cantidad.secre) + (camaras.porcen.19*categoria.19.19*camaras.cantidad.auxi)
+
+print(paste0('Costo camaras departamentales 2018 (con secre y auxi): $', camaras.costo.18 + ad.camaras.costo.18))
+print(paste0('Costo camaras departamentales 2019 (con secre y auxi): $', camaras.costo.19 + ad.camaras.costo.19))
+```
+
+Juzgados de Garantías y Tribunales Criminales
+---
+- 261 jueces/juezas categoría 20 completa 
+- 14 jueces/zas categoría 20 30% (subrogantes)
+- 8 jueces/zas categoría 20 completa (suplentes)
+
+*El número de magistradxs lo obtuvimos de relevar la página de la SC el 14/12/2020. El proporcional de su salario lo calculamos en función de las estadísticas del MP sobre cantidad de IPP por ley 23.737. A su vez, a los fines de estas estimaciones, consideramos que la disminución de caudal de trabajo entre Juzgado de Garantías y Tribunales se da de modo proporcional para cada delito. El archivo que tiene los porcentajes de este fuero es el Excel “Fuero Criminal y Correccional 2018 2019”. 
+
+```{r}
+
+garantias.tribunales.porcen.18 <- 0.0687
+garantias.tribunales.porcen.19 <- 0.089
+
+categoria.20.18 <- 35123*2+36487*4+39215*2+40579*1+44330*2+45012
+categoria.20.19 <- 46000*2+48388*2+50188*2+56310*2+58515*4
+
+garantias.tribunales.cantidad.jgarantias <- 88 + (0.3 * 3) + 2
+# j.garantias + j.garantias subrogantes + j.garantias suplentes 
+garantias.tribunales.cantidad.jtribunal <- 173 + (0.3 * 11) + 6 
+# j.tribunal + j.tribunal subrogantes + j.tribunal suplentes
+
+garantias.tribunales.costo.18 <- garantias.tribunales.porcen.18* categoria.20.18* (garantias.tribunales.cantidad.jgarantias+garantias.tribunales.cantidad.jtribunal)
+
+garantias.tribunales.costo.19 <- garantias.tribunales.porcen.19* categoria.20.19* (garantias.tribunales.cantidad.jgarantias+garantias.tribunales.cantidad.jtribunal)
+
+print(paste0('Costo Juzgados de Garantías y Tribunales Criminales 2018: $', garantias.tribunales.costo.18))
+print(paste0('Costo Juzgados de Garantías y Tribunales Criminales 2019: $', garantias.tribunales.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 312 secretarios/as Poder Judicial categoría 19 completa. Misto proporcional que magistradxs.   
+- 312 auxiliares letradxs Poder Judicial categoría 18.75. Mismo proporcional que magistradxs.   
+```{r}
+
+garantias.tribunales.cantidad.secre <- 312
+garantias.tribunales.cantidad.auxi <- 312
+
+ad.garantias.tribunales.costo.18 <- (garantias.tribunales.porcen.18*categoria.19.18*garantias.tribunales.cantidad.secre) + (garantias.tribunales.porcen.18*categoria.1875.18*garantias.tribunales.cantidad.auxi)
+
+ad.garantias.tribunales.costo.19 <- (garantias.tribunales.porcen.19*categoria.19.19*garantias.tribunales.cantidad.secre) + (garantias.tribunales.porcen.19*categoria.1875.19*garantias.tribunales.cantidad.auxi)
+
+print(paste0('Costo Juzgados de Garantías y Tribunales Criminales 2018 (con secre y auxi): $', garantias.tribunales.costo.18 + ad.garantias.tribunales.costo.18))
+print(paste0('Costo Juzgados de Garantías y Tribunales Criminales 2019 (con secre y auxi): $', garantias.tribunales.costo.19 + ad.garantias.tribunales.costo.19))
+```
+
+Agentes fiscales Ley 23.737
+---
+- 61 agentes fiscales categoría 20 completa 
+
+*La cantidad de agentes fiscales dedicados a los delitos de la ley 23.737, en los años 2018 y 2019, lo obtuvimos del informe 2018 sobre estupefacientes del MP. En este caso, dado que estos magistradxs están exclusivamente avocados a esta clase de causas no calculamos el proporcional sino el 100% de su salario. 
+
+```{r}
+
+fiscales.porcen.18 <- 1
+fiscales.porcen.19 <- 1
+
+categoria.20.18 <- 35123*2+36487*4+39215*2+40579*1+44330*2+45012
+categoria.20.19 <- 46000*2+48388*2+50188*2+56310*2+58515*4
+
+fiscales.cantidad <- 61
+
+fiscales.costo.18 <- fiscales.porcen.18*categoria.20.18*fiscales.cantidad
+fiscales.costo.19 <- fiscales.porcen.19*categoria.20.19*fiscales.cantidad
+
+print(paste0('Costo agentes fiscales 2018: $', fiscales.costo.18))
+print(paste0('Costo agentes fiscales 2019: $', fiscales.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 61 secretarios/as categoría 19.25 completa. Mismo proporcional que magistradxs.  
+- 61 auxiliares letradxs categoría 18.75 completa. Mismo proporcional que magistradxs.
+```{r}
+
+fiscales.cantidad.secre <- 61
+fiscales.cantidad.auxi <- 61
+
+ad.fiscales.costo.18 <- (fiscales.porcen.18*categoria.1925.18*fiscales.cantidad.secre) + (fiscales.porcen.18*categoria.1875.18*fiscales.cantidad.auxi)
+
+ad.fiscales.costo.19 <- (fiscales.porcen.19*categoria.1925.19*fiscales.cantidad.secre) + (fiscales.porcen.19*categoria.1875.19*fiscales.cantidad.auxi)
+
+print(paste0('Costo agentes fiscales 2018 (con secre y auxi): $', fiscales.costo.18 + ad.fiscales.costo.18))
+print(paste0('Costo agentes fiscales 2019 (con secre y auxi): $', fiscales.costo.19 + ad.fiscales.costo.19))
+```
+
+
+Defensores/as ante juzgados de garantías y tribunales criminales
+---
+- 57 defensores/as categoría 20 completa
+
+*La cantidad de defensores/as la determinamos en función de la cantidad de defensorías por departamento judicial y, en función de la organización del sistema acusatorio, teniendo en cuenta la cantidad de fiscales especializados en la materia. Para calcular el proporcional del sueldo de cada magistradx, utilizamos las estadísticas sobre IPP del MP. El archivo que tiene los porcentajes es el Excel “Fuero Criminal y Correccional 2018 2019”. 
+
+```{r}
+
+defensores.porcen.18 <- 0.0687
+defensores.porcen.19 <- 0.089
+
+categoria.20.18 <- 35123*2+36487*4+39215*2+40579*1+44330*2+45012
+categoria.20.19 <- 46000*2+48388*2+50188*2+56310*2+58515*4
+
+defensores.cantidad <- 57
+
+defensores.costo.18 <- defensores.porcen.18*categoria.20.18*defensores.cantidad
+defensores.costo.19 <- defensores.porcen.19*categoria.20.19*defensores.cantidad
+
+print(paste0('Costo defensores 2018: $', defensores.costo.18))
+print(paste0('Costo defensores 2019: $', defensores.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 57 secretarios/as categoría 19.25 completa. Mismo proporcional que magistradxs.  
+- 57 auxiliares letradxs categoría 18.75 completa. Mismo proporcional que magistradxs. 
+```{r}
+
+defensores.cantidad.secre <- 57
+defensores.cantidad.auxi <- 57
+
+ad.defensores.costo.18 <- (defensores.porcen.18*categoria.1925.18*defensores.cantidad.secre) + (defensores.porcen.18*categoria.1875.18*defensores.cantidad.auxi)
+
+ad.defensores.costo.19 <- (defensores.porcen.19*categoria.1925.19*defensores.cantidad.secre) + (defensores.porcen.19*categoria.1875.19*defensores.cantidad.auxi)
+
+print(paste0('Costo defensores 2018 (con secre y auxi): $', defensores.costo.18 + ad.defensores.costo.18))
+print(paste0('Costo defensores 2019 (con secre y auxi): $', defensores.costo.19 + ad.defensores.costo.19))
+```
+
+
+Fuero de responsabilidad penal juvenil
+---
+- 69 jueces/zas categoría 20 completa;
+- 64 fiscales/as categoría 20 completa;
+- 54 defensores/as categoría 20 completa; 
+- 1 defensor/a categoría 20 30% (subrogante).
+
+* La cantidad de magistradxs la obtuvimos a partir de relevar la pagina web de la SC y MP con fecha 14/12/2020.  Para calcular el proporcional del sueldo de cada magistradx, utilizamos las estadísticas sobre IPP del MP y, a su vez, a los fines de estas estimaciones, consideramos que la disminución de caudal de trabajo entre Juzgado de Garantías y Juzgados de Responsabilidad Penal se da de modo proporcional para cada delito. El archivo que tiene los porcentajes de este fuero es el Excel “Fuero de responsabilidad penal juvenil 2018 2019”. 
+
+
+```{r}
+
+rpj.porcen.18 <- 0.0605
+rpj.porcen.19 <- 0.0821
+
+rpj.cantidad.juez <- 69 # jueces 
+rpj.cantidad.fiscal.defensor <- 64 + 53 + (1 * 0.3) # fiscales + defensores + subrogantes
+rpj.cantidad <- rpj.cantidad.juez + rpj.cantidad.fiscal.defensor
+
+rpj.costo.18.juez <- rpj.porcen.18*categoria.20.18*rpj.cantidad.juez
+rpj.costo.18.fiscal.defensor <- rpj.porcen.18*categoria.20.18*rpj.cantidad.fiscal.defensor
+rpj.costo.18 <- rpj.costo.18.juez + rpj.costo.18.fiscal.defensor
+
+rpj.costo.19.juez <- rpj.porcen.19*categoria.20.19*rpj.cantidad.juez
+rpj.costo.19.fiscal.defensor <- rpj.porcen.19*categoria.20.19*rpj.cantidad.fiscal.defensor
+rpj.costo.19 <- rpj.costo.19.juez + rpj.costo.19.fiscal.defensor
+
+print(paste0('Costo fuero responsabilidad penal juvenil 2018: $', rpj.costo.18))
+print(paste0('Costo fuero responsabilidad penal juvenil 2019: $', rpj.costo.19))
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+
+- 69 secretarios/as Poder Judicial categoría 19.25 completa. Mismo proporcional que magistradxs. 
+- 69 auxiliares letradxs Poder Judicial categoría 18.75 completa. Mismo proporcional que magistradxs. 
+- 119 secretarios/as Ministerio Público categoría 19.25 completa. Mismo proporcional que magistradxs.
+- 119 auxiliares letradxs Ministerio público categoría 18.75 completa. Mismo proporcional que magistradxs.
+```{r}
+
+rpj.cantidad.secre.juez <- 57
+rpj.cantidad.auxi.juez <- 57
+rpj.cantidad.secre.fiscal.defensor <- 119
+rpj.cantidad.auxi.fiscal.defensor <- 119
+rpj.cantidad <- rpj.cantidad.secre.juez + rpj.cantidad.auxi.juez + rpj.cantidad.secre.fiscal.defensor + rpj.cantidad.auxi.fiscal.defensor
+
+
+ad.rpj.costo.18.juez <- 
+  (rpj.porcen.18*categoria.1925.18*rpj.cantidad.secre.juez) + 
+  (rpj.porcen.18*categoria.1875.18*rpj.cantidad.auxi.juez)
+ad.rpj.costo.18.fiscal.defensor <- 
+  (rpj.porcen.18*categoria.1925.18*rpj.cantidad.secre.fiscal.defensor) + 
+  (rpj.porcen.18*categoria.1875.18*rpj.cantidad.auxi.fiscal.defensor)
+ad.rpj.costo.18 <- ad.rpj.costo.18.juez + ad.rpj.costo.18.fiscal.defensor
+
+ad.rpj.costo.19.juez <- 
+  (rpj.porcen.19*categoria.1925.19*rpj.cantidad.secre.juez) + 
+  (rpj.porcen.19*categoria.1875.19*rpj.cantidad.auxi.juez)
+ad.rpj.costo.19.fiscal.defensor <- 
+  (rpj.porcen.19*categoria.1925.19*rpj.cantidad.secre.fiscal.defensor) + 
+  (rpj.porcen.19*categoria.1875.19*rpj.cantidad.auxi.fiscal.defensor)
+ad.rpj.costo.19 <- ad.rpj.costo.19.juez + ad.rpj.costo.19.fiscal.defensor
+
+print(paste0('Costo fuero responsabilidad penal juvenil 2018 (con secre y auxi): $', rpj.costo.18 + ad.rpj.costo.18))
+print(paste0('Costo fuero responsabilidad penal juvenil 2019 (con secre y auxi): $', rpj.costo.19 + ad.rpj.costo.19))
+```
+
+Juzgados de Ejecución Penal 
+---
+No contamos con información que nos permita calcular. 
+
+Total costo
+---
+
+#### Sin Secretarios/as y Auxiliares letrados 
+```{r}
+print(paste0('Costo total 2018: $', 
+casacion.costo.18 + fiscal.casacion.costo.18 + camaras.costo.18 + fiscales.costo.18 + defensores.costo.18 + rpj.costo.18 + garantias.tribunales.costo.18))
+
+print(paste0('Costo total 2019: $', 
+casacion.costo.19 + fiscal.casacion.costo.19 + camaras.costo.19 + fiscales.costo.19 + defensores.costo.19 + rpj.costo.19 + garantias.tribunales.costo.19))
+```
+#### Con Secretarios/as y Auxiliares letrados 
+```{r}
+print(paste0('Costo total (Con Secretarios/as y Auxiliares letrados) 2018: $', 
+casacion.costo.18 +ad.casacion.costo.18 + 
+fiscal.casacion.costo.18 +ad.fiscal.casacion.costo.18 + 
+camaras.costo.18 +ad.camaras.costo.18 + 
+fiscales.costo.18 +ad.fiscales.costo.18 + 
+defensores.costo.18 +ad.defensores.costo.18 + 
+rpj.costo.18 +ad.rpj.costo.18 + 
+garantias.tribunales.costo.18 +ad.garantias.tribunales.costo.18))
+
+print(paste0('Costo total (Con Secretarios/as y Auxiliares letrados) 2019: $', 
+casacion.costo.19 +ad.casacion.costo.19 + 
+fiscal.casacion.costo.19 +ad.fiscal.casacion.costo.19 + 
+camaras.costo.19 +ad.camaras.costo.19 + 
+fiscales.costo.19 +ad.fiscales.costo.19 + 
+defensores.costo.19 +ad.defensores.costo.19 + 
+rpj.costo.19 +ad.rpj.costo.19 + 
+garantias.tribunales.costo.19 +ad.garantias.tribunales.costo.19))
+```
+
+Diferenciar costo total 2018 y 2019 para Poder Judicial (jueces) por un lado y Ministerio Público (fiscales y defensores) por el otro.
+---
+
+#### Sin Secretarios/as y Auxiliares letrados
+```{r}
+print(paste0('Poder judicial. Costo total 2018: $', 
+casacion.costo.18 + camaras.costo.18 + garantias.tribunales.costo.18 + rpj.costo.18.juez))
+
+print(paste0('Poder judicial. Costo total 2019: $', 
+casacion.costo.19 + camaras.costo.19 + garantias.tribunales.costo.19 + rpj.costo.19.juez))
+
+print(paste0('Ministerio Publico. Costo total 2018: $', 
+fiscal.casacion.costo.18 + fiscales.costo.18 + defensores.costo.18 + rpj.costo.18.fiscal.defensor))
+
+print(paste0('Ministerio Publico. Costo total 2019: $', 
+fiscal.casacion.costo.19 + fiscales.costo.19 + defensores.costo.19 + rpj.costo.19.fiscal.defensor))
+
+```
+
+#### Con Secretarios/as y Auxiliares letrados
+```{r}
+print(paste0('Poder judicial (Con Secretarios/as y Auxiliares letrados). Costo total 2018: $', 
+casacion.costo.18+ad.casacion.costo.18 + 
+camaras.costo.18+ad.camaras.costo.18 + 
+garantias.tribunales.costo.18+ad.garantias.tribunales.costo.18 + 
+rpj.costo.18.juez+ad.rpj.costo.18.juez))
+
+print(paste0('Poder judicial (Con Secretarios/as y Auxiliares letrados). Costo total 2019: $', 
+casacion.costo.19+ad.casacion.costo.19 + 
+camaras.costo.19+ad.camaras.costo.19 + 
+garantias.tribunales.costo.19+ad.garantias.tribunales.costo.19 + 
+rpj.costo.19.juez+ad.rpj.costo.19.juez))
+
+print(paste0('Ministerio Publico (Con Secretarios/as y Auxiliares letrados). Costo total 2018: $', 
+fiscal.casacion.costo.18+ad.fiscal.casacion.costo.18 + 
+fiscales.costo.18+ad.fiscales.costo.18 + 
+defensores.costo.18+ad.defensores.costo.18 + 
+rpj.costo.18.fiscal.defensor+ad.rpj.costo.18.fiscal.defensor))
+
+print(paste0('Ministerio Publico (Con Secretarios/as y Auxiliares letrados). Costo total 2019: $', 
+fiscal.casacion.costo.19+ad.fiscal.casacion.costo.19 + 
+fiscales.costo.19+ad.fiscales.costo.19 + 
+defensores.costo.19+ad.defensores.costo.19 + 
+rpj.costo.19.fiscal.defensor+ad.rpj.costo.19.fiscal.defensor))
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
