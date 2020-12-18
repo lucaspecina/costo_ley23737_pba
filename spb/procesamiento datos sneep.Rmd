@@ -15,11 +15,11 @@ library(readr)
 library(tidyr)
 
 # sneep <- read_csv("C:/Users/Usuario/Desktop/Lucas/1- pe/7- ley 23737/data/sneep-unificado-2002-2019.csv")
-sneep <- read_csv("/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/presos 23737/data/sneep-unificado-2002-2019.csv")
+sneep <- read_csv("/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/data/sneep-unificado-2002-2019.csv")
 
 ```
 
-Todos los delitos provinciales y de PBA (les saco los federales y dejo solo PBA)
+Filtro: Todos los delitos provinciales y de PBA (les saco los federales y dejo solo PBA)
 
 ```{r}
 
@@ -31,7 +31,7 @@ pba <- provinciales %>% filter(provincia_descripcion=='Buenos Aires')
 
 ```
 
-Delitos ley 23737 de PBA
+Filtro: Delitos ley 23737 de PBA
 
 ```{r}
 
@@ -47,7 +47,7 @@ ley23737_pba <- pba %>%
 Analisis basicos para la PBA
 ---
 
-Cantidad de presos totales por año
+#### Cantidad de presos totales por año
 ```{r}
 
 # cantidad de presos totales
@@ -61,9 +61,10 @@ presos_porcen23737_por_anio <- presos_porcen23737_por_anio %>% mutate(porcen_ley
 
 print(presos_porcen23737_por_anio)
 
+#write.csv(presos_porcen23737_por_anio, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_por_anio.csv',row.names = FALSE)
 ```
 
-Cantidad de presos por 23737 por año
+#### Cantidad de presos por 23737 por año
 ```{r}
 
 data_plot <- presos_porcen23737_por_anio %>% pivot_longer(c(presos_totales,presos_ley23737), names_to='tipo', values_to='cantidad') 
@@ -83,10 +84,11 @@ ggplot(data_plot, aes(x=anio_censo,y=cantidad,color=tipo)) + geom_line() + geom_
 
 Analisis para todas las provincias
 ---
+
 Desde 2016
 Buenos Aires, Chaco, Cordoba, Formosa, Salta, Entre Rios (18/19), Santiago del Estero (18/19), CABA (19)
 
-Delitos ley 23737 de provincias
+#### Delitos ley 23737 de provincias
 
 ```{r}
 
@@ -102,7 +104,7 @@ ley23737_provs <- provinciales %>%
 ```
 
 
-Cantidad de presos totales por año
+#### Cantidad de presos totales por año
 ```{r}
 
 # cantidad de presos totales
@@ -129,7 +131,7 @@ print(presos_porcen23737_por_anio_prov)
 
 ```
 
-Cantidad de presos por 23737 por año
+#### Cantidad de presos por 23737 por año
 ```{r}
 
 ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737,color=provincia_descripcion)) + geom_line() + geom_point() +
@@ -139,6 +141,7 @@ ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737,colo
 
 Por provincia y por genero
 ---
+
 Le agrego cuatro columnas : mujeres_total, mujeres_droga, varones_total, varones_droga
 
 ```{r}
@@ -155,7 +158,7 @@ ley23737_provs <- provinciales %>%
 ```
 
 
-Cantidad de presos totales por año
+#### Cantidad de presos totales por año
 ```{r}
 
 # cantidad de presos totales

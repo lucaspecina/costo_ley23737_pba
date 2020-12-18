@@ -1,14 +1,26 @@
 ---
-title: "Evaluación de costos Poder Judicial y MP PBA 2018/2019 Ley 23.737"
+title: "Costos del SPB y Justicia por delitos por infracción a la ley 23737 (años 2018 y 2019)"
 output: html_notebook
 ---
 
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(tidyr)
+options(scipen = 999)
+```
+
+
+# Justicia
+
 Aclaraciones metodológicas: 
 ---
-- Calculo mínimo solo con magistrades y solo sobre el sueldo base. 
-- NO contamos: magistrades SCBA, adjuntos, funcionarios y empleades. 
-- NO contamos gasto por pericias. 
+Para la construcción de esta información, trabajamos con los sueldos de  lxs magistradxs de Poder Judicial y Ministerio Público vinculados con la investigación y juzgamiento de los delitos de la ley 23.737 (más abajo, se especifica la cantidad por instancia y categoría en la escala salarial), agregándole a cada magistradx  1 secretarix y 1 auxiliar letradx. Por falta de información, no fue posible considerar a la totalidad de lxs funcionarixs y empleadxs. 
+Por esta misma razón, tampoco se incluyó a Suprema Corte y Juzgados de Ejecución ni en general a cualquier otro gasto corriente que no tenga que ver con sueldos como es el papel, internet, luz, pericias, gastos de transporte, mantenimiento, etcétera. 
 
+Por lo tanto, la presente estimación es el piso mínimo del gasto.
 Para todas las cuentas utilizamos los archivos PDF “Escala Salarial 2018” y “Escala salarial 2019”. 
 
 #### Categorias
@@ -362,7 +374,7 @@ No contamos con información que nos permita calcular.
 
 
 
-Total costo
+Total costo (Justicia)
 ---
 
 #### Sin Secretarios/as y Auxiliares letrados 
@@ -443,7 +455,220 @@ rpj.costo.19.fiscal.defensor+ad.rpj.costo.19.fiscal.defensor))
 ```
 
 
+
+
+
+# SPB
+
+Datos de SPB
+--- 
+- cargo cantidades de presos y presos por 23737
+- le agrego el presupuesto para 2018 y 2019
+- calculo los costos
+
 ```{r}
+
+presos_porcen23737_por_anio <- read_csv("/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_por_anio.csv")
+
+# agrego el presupuesto para todos los años
+presos_ley23737_todosaños <- presos_porcen23737_por_anio
+presos_ley23737_todosaños['Presupuesto_anual_SPB'] <- c(480095252,568460089,840723598,977027549,1173467090,1444603505,1897422230,2534895960,3330242960,4319197000,6763368000,10793218000,14047164000,16651913070,23417065600)
+
+# calculo el costo diario y mensual (segun el presupuesto) del total de presos
+presos_ley23737_todosaños <- presos_ley23737_todosaños %>% mutate(
+  presupuesto_diario_SPB = Presupuesto_anual_SPB / 365,
+  presupuesto_mensual_SPB = Presupuesto_anual_SPB / 12)
+
+# calculo el costo diario y mensual para cada preso
+presos_ley23737_todosaños <- presos_ley23737_todosaños %>% mutate(
+  costo_diario_porpreso = presupuesto_diario_SPB / presos_totales,
+  costo_mensual_porpreso = costo_diario_porpreso * 30)
+
+# calculo cuanto de el presupuesto diario es para droga y saco lo mensual y anual
+presos_ley23737_todosaños <- presos_ley23737_todosaños %>% mutate(
+  costo_23737_diario = presupuesto_diario_SPB * (porcen_ley23737/100),
+  costo_23737_mensual = costo_23737_diario * 30,
+  costo_23737_anual = costo_23737_diario * 365)
+
+# dejo solo los 2018 y 2019
+presos_ley23737_1819 <- presos_ley23737_todosaños %>% filter(anio_censo>=2018)
+
+# junto todos los datos
+costos_spb <- as_tibble(cbind(variables = names(presos_ley23737_1819), t(presos_ley23737_1819)))
+costos_spb <- costos_spb %>% slice(2:n())
+colnames(costos_spb) <- c('columnas','año_2018','año_2019')
+costos_spb <- costos_spb %>% mutate_at(vars(año_2018,año_2019), as.numeric)
+
+costos_spb <- costos_spb %>% mutate(año_2018 = round(año_2018,2),
+                                    año_2019 = round(año_2019,2))
+
+#write.csv(presos_ley23737_1819, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_ley23737_1819.csv',row.names = FALSE)
+
+costo_spb_18 <- presos_ley23737_1819 %>% filter(anio_censo==2018) %>% pull(costo_23737_anual)
+costo_spb_19 <- presos_ley23737_1819 %>% filter(anio_censo==2019) %>% pull(costo_23737_anual)
+
+costos_spb
+```
+
+
+# COSTO TOTAL (SPB + Justicia) POR 23737
+
+Datos de justicia (en limpio)
+---
+- "Costo total (Con Secretarios/as y Auxiliares letrados) 2018: $134263940.79393"
+- "Costo total (Con Secretarios/as y Auxiliares letrados) 2019: $205212780.95384"
+
+```{r}
+
+costo_justicia_18 <- round(134263940.79393, 2)
+costo_justicia_19 <- round(205212780.95384, 2)
+
+```
+
+```{r}
+costo_total_18 <- costo_spb_18 + costo_justicia_18
+costo_total_19 <- costo_spb_19 + costo_justicia_19
+
+cat(paste0('2018: \nCosto SPB: $',costo_spb_18,'\nCosto Justicia: $',costo_justicia_18,'\nCOSTO TOTAL 2018: $',costo_total_18))
+cat(paste0('\n\n2019: \nCosto SPB: $',costo_spb_19,'\nCosto Justicia: $',costo_justicia_19,'\nCOSTO TOTAL 2019: $',costo_total_19))
+
+```
+
+```{r}
+#install.packages('gggibbous')
+#library(gggibbous)
+
+tidymoons <- data.frame(
+  x = c(2018,2018,2019,2019),
+  y = c(1,1,1,1),
+  ratio = c(costo_justicia_18/costo_total_18, costo_spb_18/costo_total_18, costo_justicia_19/costo_total_19, costo_spb_19/costo_total_19),
+  right = c(TRUE, FALSE, TRUE, FALSE),
+  fill = c('Justicia','SPB','Justicia','SPB'),
+  size = c(costo_total_18,costo_total_18,costo_total_19,costo_total_19))
+
+
+ggplot(tidymoons) +
+  geom_moon(aes(x, y, ratio = ratio, right = right, fill = fill, size = size),
+            key_glyph = draw_key_full_moon
+  ) +
+  lims(x = c(2017.7, 2019.3), y = c(0.5, 1.5)) +
+  scale_size("size", range = c(50,50*costo_total_19/costo_total_18), breaks = 2^(1:3)) +
+  scale_fill_manual(values = c("firebrick1", "dodgerblue2")) +
+  theme(legend.box = "horizontal")
+
+```
+
+#### Cambio de gasto de 2018 a 2019
+```{r}
+
+cat(paste0('Desde el 2018 al 2019 hubo un incremento porcentual del gasto relacionado a ley 23737 de: %',
+             round((costo_total_19-costo_total_18)/costo_total_18*100,2) ,'\nDesagregado:\nIncremento porcentual del SPB: %', round((costo_spb_19-costo_spb_18)/costo_spb_18*100 ,2),'\nIncremento porcentual de Justicia: %', round((costo_justicia_19-costo_justicia_18)/costo_justicia_18*100 ,2)))
+
+```
+
+Proyección para 2020
+---
+
+Miro la forma de los datos
+
+```{r}
+presos_ley23737_todosaños
+
+ggplot(presos_ley23737_todosaños, aes(x=anio_censo, y=costo_23737_anual)) + geom_line() + geom_smooth(method='lm', formula= y~x)
+
+
+```
+
+
+Hago una regresion cuadratica
+
+```{r}
+
+#create a new variable for hours2
+presos_ley23737_todosaños$anio2 <- presos_ley23737_todosaños$anio_censo^2
+
+#fit quadratic regression model
+quadraticModel <- lm(costo_23737_anual ~ anio_censo + anio2, data=presos_ley23737_todosaños)
+
+#view model summary
+summary(quadraticModel)
+
+
+```
+
+```{r}
+#create sequence of hour values
+anios_valores <- seq(2005, 2020, 0.1)
+
+#create list of predicted happines levels using quadratic model
+costoPredict <- predict(quadraticModel,list(anio_censo=anios_valores, anio2=anios_valores^2))
+
+#create scatterplot of original data values
+plot(presos_ley23737_todosaños$anio_censo, presos_ley23737_todosaños$costo_23737_anual, pch=16)
+#add predicted lines based on quadratic regression model
+lines(anios_valores, costoPredict, col='blue')
+```
+
+
+
+
+Uso a partir del 2016 para crear un modelo estadistico para predecir el 2020.
+
+```{r}
+
+ggplot(presos_ley23737_todosaños %>% filter(anio_censo>= 2016), aes(x=anio_censo, y=costo_23737_anual)) + geom_line() + geom_smooth(method='lm', formula= y~x)
+
+
+```
+
+Hago una regresion lineal simple
+
+```{r}
+
+#fit linear model
+linearModel <- lm(costo_23737_anual ~ anio_censo, data=presos_ley23737_todosaños %>% filter(anio_censo>=2016))
+
+#view model summary
+summary(linearModel)
+
+```
+
+Esto significa que la formula es : 
+- -1278493483501 + 634580637 * anio_censo
+
+#### Predicción para el 2020
+```{r}
+print(paste0('La predicción de costos de Justicia+SPB para el año 2020 (usando una regresión lineal simple) es de: $',round(-1278493483501 + 634580637 * 2020, 2)))
+```
+
+Comparaciones
+---
+
+
+#### Educación
+2018
+
+- Salario Bruto del Maestro de Grado (MG) de nivel primario con 10 años de antigüedad,
+Promedio $25102
+
+2019
+
+- Promedio $34000
+
+2020
+
+- Promedio Maestra/o de jardín o escuela primaria (con 10 años de antigüedad): $42500
+
+#### Investigación y desarrollo
+
+2020
+
+- Proyecto de investigación y desarrollo - Convocatoria de la Comisión de Investigaciones Científicas (CIC): $300000
+- Subsidio para proyectos de fortalecimiento de Pequeñas Unidades Productivas de Alimentos (PUPAS): $200000
+```{r}
+cat(paste0('2018:\nEl gasto del SPB y Justicia por delitos por infracción a la ley 23737 en el año 2018 equivale a:\n- ',round(costo_total_18/25102,0),' Salarios Brutos del Maestro de Grado (MG) de nivel primario con 10 años de antigüedad\n\n'))
+cat(paste0('2019:\nEl gasto del SPB y Justicia por delitos por infracción a la ley 23737 en el año 2019 equivale a:\n- ',round(costo_total_19/34000,0),' Salarios Brutos del Maestro de Grado (MG) de nivel primario con 10 años de antigüedad\n\n'))
+cat(paste0('2020:\nEl gasto ESTIMADO del SPB y Justicia por delitos por infracción a la ley 23737 en el año 2020 equivale a:\n- ',round(3359403239/42500,0),' Salarios Brutos del Maestra/o de jardín o escuela primaria (con 10 años de antigüedad)\n- ',round(3359403239/300000,0),' Proyectos de investigación y desarrollo - Convocatoria de la Comisión de Investigaciones Científicas (CIC)\n- ',round(3359403239/200000,0),' Subsidios para proyectos de fortalecimiento de Pequeñas Unidades Productivas de Alimentos (PUPAS)'))
 
 ```
 
@@ -458,28 +683,3 @@ rpj.costo.19.fiscal.defensor+ad.rpj.costo.19.fiscal.defensor))
 ```{r}
 
 ```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
