@@ -672,7 +672,131 @@ cat(paste0('2020:\nEl gasto ESTIMADO del SPB y Justicia por delitos por infracci
 
 ```
 
+
+
+
+
+# Análisis y estadísticas del SPB
+
+
+Cantidad de presos totales por año (PBA)
+---
+
 ```{r}
+presos_porcen23737_por_anio <- read_csv("/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_por_anio.csv")
+
+presos_porcen23737_por_anio
+
+data_plot <- presos_porcen23737_por_anio %>% pivot_longer(c(presos_totales,presos_ley23737), names_to='tipo', values_to='cantidad') 
+  
+ggplot(data_plot, aes(x=anio_censo,y=cantidad,color=tipo)) + geom_line() + geom_point() +
+    labs(title="Cantidad de presos/as totales y por 23737 (PBA)",x="Año de censo", y = "Cantidad de presos")
+
+
+```
+
+Analisis para todas las provincias
+---
+
+Desde 2016 Buenos Aires, Chaco, Cordoba, Formosa, Salta, Entre Rios (18/19), Santiago del Estero (18/19), CABA (19)
+
+#### Delitos ley 23737 de provincias
+
+```{r}
+presos_porcen23737_por_anio_prov <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_por_anio_prov.csv')
+
+presos_porcen23737_por_anio_prov
+```
+
+#### Cantidad de presos por 23737 por año
+```{r}
+
+ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737,color=provincia_descripcion)) + geom_line() + geom_point() +
+    labs(title="Porcentaje (%) de presos/as por ley 23737 por provincias elegidas",x="Año de censo", y = "Porcentaje de presos por 23737 (%)")
+
+```
+
+Por provincia y por genero
+---
+
+Le agrego cuatro columnas : mujeres_total, mujeres_droga, varones_total, varones_droga
+
+
+```{r}
+presos_porcen23737_anio_provs_genero <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anio_provs_genero.csv')
+
+presos_porcen23737_por_anio_prov
+```
+
+Procesados y condenados por droga y no droga
+---
+
+
+```{r}
+procesados_porcen_todos <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/procesados_porcen_todos.csv')
+
+# graficos de lineas (con la diferencia entre porcentajes de procesados por droga y no droga)
+ggplot(procesados_porcen_todos, aes(x=anio_censo,y=diferencia_procesados,color=provincia_descripcion)) + geom_line() + geom_point() +
+    labs(title="Diferencia de porcentajes de procesados entre drogas y no drogas",x="Año de censo", y = "Diferencia de porcentajes entre drogas y no drogas")
+
+# para solo buenos aires (es un gather) saco el 2005 porq solo fue diciembre lo de drogas
+data_plotear <- procesados_porcen_todos %>% filter(provincia_descripcion=='Buenos Aires' & anio_censo>= 2006) %>% gather(tipo_delito, porcentaje, c(procesados_porcen_droga,procesados_porcen_NOdroga),factor_key=TRUE)
+
+ggplot(data_plotear, aes(x=anio_censo,y=porcentaje,color=tipo_delito)) + geom_line() + geom_point() +
+    labs(title="Porcentajes de procesados entre drogas y no drogas (PBA)",x="Año de censo", y = "Porcentajes de procesados(%)")
+
+```
+
+```{r}
+prueba_BA_proce <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/prueba_BA_proce.csv')
+
+ggplot(prueba_BA_proce, aes(x=anio_censo,y=procesados_porcen)) + geom_line() + geom_point() +
+    labs(title="Diferencia de porcentajes de procesados PBA",x="Año de censo", y = "Porcentajes procesados")
+```
+
+
+Porcentaje por ley 23737 por cada unidad
+---
+
+```{r}
+unidades_pba_2019 <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/unidades_pba_2019.csv')
+
+# tomando las 20 unidades con mas presos, el porcentaje promedio de presos x droga es
+cat(paste0('Tomando las 20 unidades con mas presos, el porcentaje promedio de presos x droga es ',mean(unidades_pba_2019 %>% head(20) %>% pull(prop_droga)))) # 12.35 %
+```
+
+```{r}
+ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram(aes(y=..density..), colour="black", fill="white") + geom_density(alpha=.2, fill="#FF6666") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 5))
+
+ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram( colour="black", fill="white") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 5))
+```
+
+Reincidencias
+---
+
+Comparo la proporcion de reincidentes por delitos de droga y no droga.
+Hay que usar solo los datos de condenados porque no cargan las reincidencias para los procesados.
+
+
+```{r}
+reinci_porcen_todos <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/reinci_porcen_todos.csv')
+
+# gather
+data_plotear_reinci <- reinci_porcen_todos %>% gather(tipo_delito, porcentaje_reinci, c(reinci_porcen_droga,reinci_porcen_NOdroga),factor_key=TRUE) %>% select(c(anio_censo, tipo_delito, porcentaje_reinci))
+
+ggplot(data_plotear_reinci, aes(x=anio_censo,y=porcentaje_reinci,color=tipo_delito)) + geom_line() + geom_point() +
+    labs(title="Porcentajes de reincidentes entre drogas y no drogas (PBA)",x="Año de censo", y = "Porcentajes de reincidentes (%)")
+
+```
+
+Ver todos los valores de la variable es_reincidente_descripcion por separado y su evolucion
+
+```{r}
+reinci_separado_droga <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/reinci_separado_droga.csv')
+
+ggplot(reinci_separado_droga, aes(x=anio_censo,y=cantidad,color=es_reincidente_descripcion)) + geom_line() + geom_point() + labs(title="Cantidad de presos/as por droga segun reincidencia (PBA)",x="Año de censo", y = "Cantidad de presos/as")
 
 ```
 
