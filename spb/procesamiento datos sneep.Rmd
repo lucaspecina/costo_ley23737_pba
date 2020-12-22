@@ -19,28 +19,53 @@ library(tidyr)
 
 ```
 
-Filtro: Todos los delitos provinciales y de PBA (les saco los federales y dejo solo PBA)
+Datasets generales a usar
+---
+- provinciales : todos delitos, todas provincias (seleccionadas)
+- pba : todos delitos, PBA
+- ley23737_provs : delitos 23737, todas las provincias (seleccionadas)
+- ley23737_pba : delitos 23737, PBA
 
 ```{r}
 
+#### datasets de todos los delitos ####
+
 # esto deja solo las provinciales
-provinciales <- sneep %>% filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')
+provinciales <- sneep %>% 
+  filter(reparticion_descripcion=='Provincial') %>%
+  filter(
+    (provincia_descripcion=='Buenos Aires' & anio_censo>=2005) |
+                (provincia_descripcion=='Chaco' & anio_censo>=2015) |
+                (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
+                (provincia_descripcion=='Formosa' & anio_censo>=2015) |
+                (provincia_descripcion=='Salta' & anio_censo>=2014) |
+                (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
+                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018))
+
 
 # delitos totales de la PBA
 pba <- provinciales %>% filter(provincia_descripcion=='Buenos Aires')
 
-```
 
-Filtro: Delitos ley 23737 de PBA
+#### datasets de solo drogas ####
 
-```{r}
+# ley 23737 PBA
+ley23737_pba <- pba %>% filter((
+      delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+      delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
 
-# ley 23737
-ley23737_pba <- pba %>%
-  
-  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)'))
+
+# ley 23737 para todas las provincias
+ley23737_provs <- provinciales %>% filter((
+      delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+      delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+      delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
+          
 
 ```
 
@@ -57,7 +82,7 @@ presos_ley23737_por_anio <- ley23737_pba %>% group_by(anio_censo) %>% summarise(
 # joineo
 presos_porcen23737_por_anio <- presos_total_por_anio %>% inner_join(presos_ley23737_por_anio, by='anio_censo')
 # calculo porcentaje
-presos_porcen23737_por_anio <- presos_porcen23737_por_anio %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+presos_porcen23737_por_anio <- presos_porcen23737_por_anio %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
 
 print(presos_porcen23737_por_anio)
 
@@ -88,44 +113,29 @@ Analisis para todas las provincias
 Desde 2016
 Buenos Aires, Chaco, Cordoba, Formosa, Salta, Entre Rios (18/19), Santiago del Estero (18/19), CABA (19)
 
-#### Delitos ley 23737 de provincias
-
+#### Cantidad de presos totales y por droga, por año y provincia
 ```{r}
 
-# ley 23737
-ley23737_provs <- provinciales %>%
-  
-  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
-  
-  filter(provincia_id==jurisdiccion_id)
+# cantidad de presos totales por año y provincia
+presos_total_por_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(presos_totales= n())
 
-```
-
-
-#### Cantidad de presos totales por año
-```{r}
-
-# cantidad de presos totales
-presos_total_por_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_totales= n())
 # cantidad de presos droga por año y provincia
-presos_ley23737_por_anio_prov <- ley23737_provs %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_ley23737= n())
-# joineo
-presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
-# calculo porcentaje
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+presos_ley23737_por_anio_prov <- ley23737_provs %>% group_by(anio_censo,provincia_descripcion) %>%
+  summarise(presos_ley23737= n())
 
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% 
+  inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
+
+# calculo porcentaje
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
-          filter(
-              (provincia_descripcion=='Buenos Aires') |
-                (provincia_descripcion=='Chaco' & anio_censo>=2015) |
-                (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
-                (provincia_descripcion=='Formosa' & anio_censo>=2015) |
-                (provincia_descripcion=='Salta' & anio_censo>=2014) |
-                (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
-                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
-            )
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+# calculo cambios porcentuales por año
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% group_by(provincia_descripcion) %>%
+  mutate(cambioporc_totales = (presos_totales-lag(presos_totales))/lag(presos_totales) ,
+         cambioporc_23737 = (presos_ley23737-lag(presos_ley23737))/lag(presos_ley23737))
 
 # write.csv(presos_porcen23737_por_anio_prov, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_por_anio_prov.csv',row.names = FALSE)
 
@@ -133,7 +143,7 @@ print(presos_porcen23737_por_anio_prov)
 
 ```
 
-#### Cantidad de presos por 23737 por año
+#### Graficar
 ```{r}
 
 ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737,color=provincia_descripcion)) + geom_line() + geom_point() +
@@ -146,93 +156,109 @@ Por provincia y por genero
 
 Le agrego cuatro columnas : mujeres_total, mujeres_droga, varones_total, varones_droga
 
+
+#### Presos totales y droga, por año, provincia y genero
+
+Los de genero no tienen NAs asi que PRUEBO que sumas de categorias sea igual a presos_totales/ley23737
 ```{r}
+## PRUEBAS NA
+# bien, no tiene NAs
 
-# ley 23737
-ley23737_provs <- provinciales %>%
-  
-  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
-  
-  filter(provincia_id==jurisdiccion_id)
-
-```
-
-
-#### Cantidad de presos totales por año
-```{r}
 
 # cantidad de presos totales
-presos_total_por_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_totales= n())
+presos_total_por_anio_prov <- provinciales %>% 
+  group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(presos_totales= n())
+
 # cantidad de presos droga por año y provincia
-presos_ley23737_por_anio_prov <- ley23737_provs %>% group_by(anio_censo,provincia_descripcion) %>% summarise(presos_ley23737= n())
+presos_ley23737_por_anio_prov <- ley23737_provs %>% 
+  group_by(anio_censo,provincia_descripcion) %>% 
+  summarise(presos_ley23737= n())
+
 # joineo
-presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
-
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
-          filter(
-              (provincia_descripcion=='Buenos Aires') |
-                (provincia_descripcion=='Chaco' & anio_censo>=2015) |
-                (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
-                (provincia_descripcion=='Formosa' & anio_censo>=2015) |
-                (provincia_descripcion=='Salta' & anio_censo>=2014) |
-                (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
-                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
-            )
-
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% 
+  inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo','provincia_descripcion'))
 
 
 # POR GENERO
-mujeres_total <- provinciales %>% filter(genero_descripcion=='Femenino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# total mujeres
+mujeres_total <- provinciales %>% filter(genero_descripcion=='Femenino') %>% 
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(mujeres_total= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(mujeres_total,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  left_join(mujeres_total,by=c('anio_censo','provincia_descripcion'))
 
-mujeres_droga <- ley23737_provs %>% filter(genero_descripcion=='Femenino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# droga mujeres
+mujeres_droga <- ley23737_provs %>% filter(genero_descripcion=='Femenino') %>%
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(mujeres_droga= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(mujeres_droga,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
+  left_join(mujeres_droga,by=c('anio_censo','provincia_descripcion'))
 
-varones_total <- provinciales %>% filter(genero_descripcion=='Masculino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# total varones
+varones_total <- provinciales %>% filter(genero_descripcion=='Masculino') %>% 
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(varones_total= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(varones_total,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
+  left_join(varones_total,by=c('anio_censo','provincia_descripcion'))
 
-varones_droga <- ley23737_provs %>% filter(genero_descripcion=='Masculino') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# droga varones
+varones_droga <- ley23737_provs %>% filter(genero_descripcion=='Masculino') %>%
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(varones_droga= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(varones_droga,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
+  left_join(varones_droga,by=c('anio_censo','provincia_descripcion'))
 
-transexual_total <- provinciales %>% filter(genero_descripcion=='Transexual') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# total transexuales
+transexual_total <- provinciales %>% filter(genero_descripcion=='Transexual') %>%
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(transexual_total= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(transexual_total,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
+  left_join(transexual_total,by=c('anio_censo','provincia_descripcion'))
 
-transexual_droga <- ley23737_provs %>% filter(genero_descripcion=='Transexual') %>% group_by(anio_censo,provincia_descripcion) %>% 
+# droga transexuales
+transexual_droga <- ley23737_provs %>% filter(genero_descripcion=='Transexual') %>%
+  group_by(anio_censo,provincia_descripcion) %>% 
   summarise(transexual_droga= n())
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% left_join(transexual_droga,by=c('anio_censo','provincia_descripcion'))
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
+  left_join(transexual_droga,by=c('anio_censo','provincia_descripcion'))
+
 
 # reemplazo los NA con 0
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
 
-# calculo porcentajes
-presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(porcen_ley23737 = (presos_ley23737/presos_totales*100))
+
+## PRUEBAS SUMAS
+# bien, da igual
+
+
+# calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
 # de total de GENERO, cuantas son por droga
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
-      mujeres_porcen_droga = mujeres_droga/mujeres_total*100,
-      varones_porcen_droga = varones_droga/varones_total*100,
-      transexuales_porcen_droga = transexual_droga/transexual_total*100)
+      mujeres_porcen_droga = mujeres_droga/mujeres_total,
+      varones_porcen_droga = varones_droga/varones_total,
+      transexuales_porcen_droga = transexual_droga/transexual_total)
 # del total de delitos, que porcentaje por genero
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
-      total_porcen_mujeres = mujeres_total/(mujeres_total+varones_total+transexual_total)*100,
-      total_porcen_varones = varones_total/(mujeres_total+varones_total+transexual_total)*100,
-      total_porcen_transexuales = transexual_total/(mujeres_total+varones_total+transexual_total)*100)
+      total_porcen_mujeres = mujeres_total/(mujeres_total+varones_total+transexual_total),
+      total_porcen_varones = varones_total/(mujeres_total+varones_total+transexual_total),
+      total_porcen_transexuales = transexual_total/(mujeres_total+varones_total+transexual_total))
 # de delitos droga, que porcentaje por genero
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% mutate(
-      droga_porcen_mujeres = mujeres_droga/(mujeres_droga+varones_droga+transexual_droga)*100,
-      droga_porcen_varones = varones_droga/(mujeres_droga+varones_droga+transexual_droga)*100,
-      droga_porcen_transexuales = transexual_droga/(mujeres_droga+varones_droga+transexual_droga)*100)
+      droga_porcen_mujeres = mujeres_droga/(mujeres_droga+varones_droga+transexual_droga),
+      droga_porcen_varones = varones_droga/(mujeres_droga+varones_droga+transexual_droga),
+      droga_porcen_transexuales = transexual_droga/(mujeres_droga+varones_droga+transexual_droga))
 
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
 
 # write.csv(presos_porcen23737_por_anio_prov, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anio_provs_genero.csv',row.names = FALSE)
 presos_porcen23737_por_anio_prov
 ```
+
 
 ```{r}
 
@@ -249,7 +275,7 @@ Procesados y condenados por droga y no droga
 Primero saco los otros que no sean condenados y procesados y a eso le aplico lo de provinciales
 ```{r}
 
-provinciales <- sneep %>% filter((situacion_legal_descripcion=='Procesado') | (situacion_legal_descripcion=='Condenado')) %>%
+provinciales_proce_conde <- sneep %>% filter((situacion_legal_descripcion=='Procesado') | (situacion_legal_descripcion=='Condenado')) %>%
   filter(anio_censo>=2005 & reparticion_descripcion=='Provincial')
 
 # BA_proce_conde <- sneep %>% filter((situacion_legal_descripcion=='Procesado') | (situacion_legal_descripcion=='Condenado')) %>%
@@ -261,14 +287,13 @@ provinciales <- sneep %>% filter((situacion_legal_descripcion=='Procesado') | (s
 Dejo solo los que no son de drogas
 ```{r}
 # delitos por NO ley 23737
-NOdroga_provs <- provinciales %>%
+NOdroga_provs <- provinciales_proce_conde %>%
   filter(
     ((delito1_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito1_descripcion))) & 
     ((delito2_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito2_descripcion))) &
     ((delito3_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito3_descripcion))) & 
     ((delito4_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito4_descripcion))) &
     ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) %>%
-  filter(provincia_id==jurisdiccion_id) %>%
   filter(
     (provincia_descripcion=='Buenos Aires') |
       (provincia_descripcion=='Chaco' & anio_censo>=2015) |
@@ -301,13 +326,12 @@ procesados_porcen_NOdroga <- procesados_porcen_NOdroga %>% mutate(procesados_por
 Dejo solo los que son de drogas
 ```{r}
 # delitos por ley 23737
-droga_provs <- provinciales %>%
+droga_provs <- provinciales_proce_conde %>%
     filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
             delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
-  filter(provincia_id==jurisdiccion_id) %>%
   filter(
     (provincia_descripcion=='Buenos Aires') |
       (provincia_descripcion=='Chaco' & anio_censo>=2015) |
@@ -347,6 +371,7 @@ procesados_porcen_todos <- procesados_porcen_droga %>% inner_join(procesados_por
 # hago la resta
 procesados_porcen_todos <- procesados_porcen_todos %>% mutate(diferencia_procesados = procesados_porcen_droga - procesados_porcen_NOdroga)
 
+procesados_porcen_todos
 
 # write.csv(procesados_porcen_todos, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/procesados_porcen_todos.csv',row.names = FALSE)
 ```
@@ -390,22 +415,11 @@ ggplot(prueba_BA_proce, aes(x=anio_censo,y=procesados_porcen)) + geom_line() + g
 Porcentaje por ley 23737 por cada unidad
 ---
 
-No droga dataset y agrupado
+todos delitos
 ```{r}
 
-# delitos por NO ley 23737
-total_provs <- provinciales %>%
-  filter(provincia_id==jurisdiccion_id) %>%
-  filter(
-    (provincia_descripcion=='Buenos Aires') |
-      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
-      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
-      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
-      (provincia_descripcion=='Salta' & anio_censo>=2014) |
-      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
-      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
-  )
-
+# todos delitos
+total_provs <- provinciales
 
 
 # hago el agrupamiento tambien por unidad
@@ -417,22 +431,7 @@ total_unidades <- total_provs %>% group_by(anio_censo,provincia_descripcion, est
 Droga dataset y agrupado
 ```{r}
 # delitos por ley 23737
-droga_provs <- provinciales %>%
-    filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-            delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-            delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-            delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-            delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
-  filter(provincia_id==jurisdiccion_id) %>%
-  filter(
-    (provincia_descripcion=='Buenos Aires') |
-      (provincia_descripcion=='Chaco' & anio_censo>=2015) |
-      (provincia_descripcion=='Córdoba' & anio_censo>=2012) |
-      (provincia_descripcion=='Formosa' & anio_censo>=2015) |
-      (provincia_descripcion=='Salta' & anio_censo>=2014) |
-      (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
-      (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)
-  )
+droga_provs <- ley23737_provs
 
 
 droga_unidades <- droga_provs %>% group_by(anio_censo,provincia_descripcion, establecimiento_descripcion) %>%
@@ -446,23 +445,30 @@ Join y calculos
 
 unidades <- total_unidades %>% inner_join(droga_unidades, by=c('anio_censo','provincia_descripcion','establecimiento_descripcion'))
 
-unidades <- unidades %>% mutate(prop_droga = cantidad_droga / cantidad_total * 100)
+unidades <- unidades %>% mutate(prop_droga = cantidad_droga / cantidad_total )
 
 unidades_pba_2019 <- unidades %>% filter(provincia_descripcion == 'Buenos Aires' & anio_censo==2019) %>% arrange(desc(cantidad_total))
 
-# write.csv(unidades_pba_2019, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/unidades_pba_2019.csv')
+#write.csv(unidades_pba_2019, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/unidades_pba_2019.csv')
 
 # tomando las 20 unidades con mas presos, el porcentaje promedio de presos x droga es
 mean(unidades_pba_2019 %>% head(20) %>% pull(prop_droga)) # 12.35 %
 
+unidades_pba_2019
 ```
 
 ```{r}
 ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram(aes(y=..density..), colour="black", fill="white") + geom_density(alpha=.2, fill="#FF6666") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
-  scale_x_continuous(breaks = seq(0, 60, by = 5))
+  scale_x_continuous(breaks = seq(0, 60, by = 5)) +
+    labs(title="Distribución de los porcentajes de presos/as por droga por unidad",x="Porcentaje de presos/as por droga (%)", y = "Densidad (frecuencia relativa)")
 
 ggplot(unidades_pba_2019 , aes(x=prop_droga)) + geom_histogram( colour="black", fill="white") + geom_vline(aes(xintercept=mean(unidades_pba_2019$prop_droga)), color="blue", linetype="dashed", size=1) + 
-  scale_x_continuous(breaks = seq(0, 60, by = 5))
+  scale_x_continuous(breaks = seq(0, 60, by = 5)) 
+```
+
+
+```{r}
+
 ```
 
 ```{r}
@@ -493,9 +499,7 @@ NOdroga_reinci <- BA_reinci %>%
     ((delito2_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito2_descripcion))) &
     ((delito3_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito3_descripcion))) & 
     ((delito4_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito4_descripcion))) &
-    ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) %>%
-  filter(provincia_id==jurisdiccion_id)
-
+    ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) 
 ```
 
 Saco los numeros y porcentajes de procesados para los no droga
@@ -523,8 +527,7 @@ droga_reinci <- BA_reinci %>%
             delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
             delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-            delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) %>%
-  filter(provincia_id==jurisdiccion_id)
+            delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
 
 
 ```
@@ -552,7 +555,7 @@ Joineo los resultados de drogas y no drogas
 ```{r}
 
 reinci_porcen_todos <- reincidentes_porcen_droga %>% inner_join(reincidentes_porcen_NOdroga, by=c('anio_censo'))
-
+reinci_porcen_todos
 # write.csv(reinci_porcen_todos, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/reinci_porcen_todos.csv')
 ```
 
@@ -576,6 +579,606 @@ reinci_separado_droga <- droga_reinci %>% group_by(anio_censo,es_reincidente_des
 # write.csv(reinci_separado_droga, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/reinci_separado_droga.csv')
 
 ggplot(reinci_separado_droga, aes(x=anio_censo,y=cantidad,color=es_reincidente_descripcion)) + geom_line() + geom_point() + labs(title="Cantidad de presos/as por droga segun reincidencia (PBA)",x="Año de censo", y = "Cantidad de presos/as")
+
+```
+
+
+
+# CABA
+
+```{r}
+
+caba <- sneep %>% filter(jurisdiccion_descripcion == 'Justicia de la Ciudad de Buenos Aires')
+
+caba_droga <- caba %>% filter((
+delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)'))
+
+
+
+```
+
+
+
+#Otras estadisticas
+
+
+Nacionalidad
+---
+
+```{r}
+
+# ley 23737
+ley23737_provs <- provinciales %>%
+  
+  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
+         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
+         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
+  
+```
+
+
+#### Hacer de todas las provs en 2019 (esta ok)
+```{r}
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- provinciales %>% 
+  filter(anio_censo==2019) %>%
+  group_by(provincia_descripcion) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_provs %>% 
+  filter(anio_censo==2019) %>%
+  group_by(provincia_descripcion) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('provincia_descripcion'))
+
+
+# PRIMERO VER LAS NACIONALIDADES MAS COMUNES (5)
+table(provinciales %>% filter(provincia_descripcion=='Buenos Aires' & anio_censo==2019) %>% pull(nacionalidad_descripcion))
+
+
+# POR NACIONALIDAD
+for(nacion in c('Argentina','Paraguaya','Peruana','Boliviana','Uruguaya','Chilena','Brasileña','Colombiana','Otras')){
+  
+  # total
+  nacionalidad_total <- provinciales %>% filter(anio_censo==2019 & nacionalidad_descripcion==nacion) %>%
+    group_by(provincia_descripcion) %>% summarise("{nacion}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('provincia_descripcion'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_provs %>% filter(anio_censo==2019 & nacionalidad_descripcion==nacion) %>% 
+    group_by(provincia_descripcion) %>% summarise("{nacion}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('provincia_descripcion'))
+  
+}
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+#### PRUEBA SUMAS
+# bien, hago con el total porq quiero ver eso
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_Argentina = Argentina_total/(presos_totales),
+            total_porcen_Paraguaya = Paraguaya_total/(presos_totales),
+            total_porcen_Boliviana = Boliviana_total/(presos_totales),
+            total_porcen_Peruana = Peruana_total/(presos_totales),
+            total_porcen_Uruguaya = Uruguaya_total/(presos_totales),
+            total_porcen_Chilena = Chilena_total/(presos_totales),
+            total_porcen_Brasileña = Brasileña_total/(presos_totales),
+            total_porcen_Colombiana = Colombiana_total/(presos_totales),
+            total_porcen_Otras = Otras_total/(presos_totales))
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_Argentina = 
+Argentina_droga/(presos_ley23737),
+            droga_porcen_Paraguaya = 
+Paraguaya_droga/(presos_ley23737),
+            droga_porcen_Boliviana = Boliviana_droga/(presos_ley23737),
+            droga_porcen_Peruana = Peruana_droga/(presos_ley23737),
+            droga_porcen_Uruguaya = Uruguaya_droga/(presos_ley23737),
+            droga_porcen_Chilena = Chilena_droga/(presos_ley23737),
+            droga_porcen_Brasileña = Brasileña_droga/(presos_ley23737),
+            droga_porcen_Colombiana = Colombiana_droga/(presos_ley23737),
+            droga_porcen_Otras = Otras_droga/(presos_ley23737)
+  )
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+presos_porcen23737_por_anio_prov.T
+
+write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_2019_provs_nacionalidades.csv',row.names = FALSE)
+```
+
+
+#### Nacionalidades de PBA por año (esta ok)
+
+```{r}
+### PRUEBA NAs
+table(pba %>% pull(nacionalidad_descripcion))
+# bien, no tiene NAs
+
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- pba %>% 
+  group_by(anio_censo) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_pba %>% 
+  group_by(anio_censo) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% 
+  inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo'))
+
+
+# POR NACIONALIDAD
+for(nacion in c('Argentina','Paraguaya','Peruana','Boliviana','Uruguaya','Chilena','Brasileña','Colombiana','Otras')){
+  
+  # total
+  nacionalidad_total <- pba %>% filter(nacionalidad_descripcion==nacion) %>%
+    group_by(anio_censo) %>% summarise("{nacion}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('anio_censo'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_pba %>% filter(nacionalidad_descripcion==nacion) %>% 
+    group_by(anio_censo) %>% summarise("{nacion}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('anio_censo'))
+  
+}
+
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+
+### PRUEBA SUMAS
+# bien, parecido asi que sumo el total (porque quiero ver sobre el total posta)
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_Argentina = 
+Argentina_total/(presos_totales),
+            total_porcen_Paraguaya = 
+Paraguaya_total/(presos_totales),
+            total_porcen_Boliviana = Boliviana_total/(presos_totales),
+            total_porcen_Peruana = Peruana_total/(presos_totales),
+            total_porcen_Uruguaya = Uruguaya_total/(presos_totales),
+            total_porcen_Chilena = Chilena_total/(presos_totales),
+            total_porcen_Brasileña = Brasileña_total/(presos_totales),
+            total_porcen_Colombiana = Colombiana_total/(presos_totales),
+            total_porcen_Otras = Otras_total/(presos_totales)
+  )
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_Argentina = 
+Argentina_droga/(presos_ley23737),
+            droga_porcen_Paraguaya = 
+Paraguaya_droga/(presos_ley23737),
+            droga_porcen_Boliviana = Boliviana_droga/(presos_ley23737),
+            droga_porcen_Peruana = Peruana_droga/(presos_ley23737),
+            droga_porcen_Uruguaya = Uruguaya_droga/(presos_ley23737),
+            droga_porcen_Chilena = Chilena_droga/(presos_ley23737),
+            droga_porcen_Brasileña = Brasileña_droga/(presos_ley23737),
+            droga_porcen_Colombiana = Colombiana_droga/(presos_ley23737),
+            droga_porcen_Otras = Otras_droga/(presos_ley23737)
+  )
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_nacionalidades.csv',row.names = FALSE)
+presos_porcen23737_por_anio_prov.T
+
+```
+
+
+Nivel de instruccion
+---
+
+Solo de PBA
+
+Hay NAs. Asumo que estna igualmente distribuidos, por lo tanto hacemos la proporcion sobre la SUMA
+```{r}
+### PRUEBA NAs
+sum(is.na(pba %>% filter(anio_censo==2019) %>% pull(nivel_instruccion_descripcion)))
+# si hay NAs
+
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- pba %>%
+  group_by(anio_censo) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga pba
+presos_ley23737_por_anio_prov <- ley23737_pba %>%
+  group_by(anio_censo) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo'))
+
+
+# ver los niveles de instruccion
+niveles_instruccion <- c("Primario incompleto" , "Primario completo" , "Secundario incompleto" , "Ninguno", "Universitario completo" , "Secundario completo" , "Terciario completo" ,"Terciario incompleto",
+ "Polimodal Incompleto" , "EGB 3 Completo" , "EGB 2 Completo" , "EGB 1 Incompleto",
+ "Universitario incompleto" , "EGB 1 Completo" , "EGB 3 Incompleto","Polimodal Completo","EGB 2 Incompleto")
+
+# POR NIVEL DE INSTRUCCION
+for(instruccion in niveles_instruccion){
+  
+  # total
+  nacionalidad_total <- pba %>% filter(nivel_instruccion_descripcion==instruccion) %>%
+    group_by(anio_censo) %>% summarise("{instruccion}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('anio_censo'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_pba %>% filter(nivel_instruccion_descripcion==instruccion) %>% 
+    group_by(anio_censo) %>% summarise("{instruccion}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('anio_censo'))
+  
+}
+
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+
+### PRUEBA SUMAS
+# hacemos sobre la suma individual de todos
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_Primario_incompleto = `Primario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Primario_completo = `Primario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Secundario_incompleto = `Secundario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Secundario_completo = `Secundario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Ninguno = Ninguno_total/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Universitario_completo = `Universitario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Universitario_incompleto = `Universitario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Terciario_completo = `Terciario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Terciario_incompleto = `Terciario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Polimodal_Incompleto = `Polimodal Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Polimodal_Completo = `Polimodal Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_3_Completo = `EGB 3 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_2_Completo = `EGB 2 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_1_Completo = `EGB 1 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`)  )
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_Primario_incompleto = `Primario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Primario_completo = `Primario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Secundario_incompleto = `Secundario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Secundario_completo = `Secundario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Ninguno = Ninguno_droga/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Universitario_completo = `Universitario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Universitario_incompleto = `Universitario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Terciario_completo = `Terciario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Terciario_incompleto = `Terciario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Polimodal_Incompleto = `Polimodal Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Polimodal_Completo = `Polimodal Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_3_Completo = `EGB 3 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_2_Completo = `EGB 2 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_1_Completo = `EGB 1 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`)  )
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+presos_porcen23737_por_anio_prov.T
+
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_niveles_instruccion.csv',row.names = FALSE)
+
+
+
+
+
+```
+
+
+
+Ultima situacion laboral
+---
+
+Solo para PBA
+
+```{r}
+#### PRUEBA NAs
+sum(is.na(pba %>% filter(anio_censo==2019) %>% pull(ultima_situacion_laboral_descripcion)))
+# hay 39 NAs, muy poco
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- pba %>%
+  group_by(anio_censo) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_pba %>% 
+  group_by(anio_censo) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo'))
+
+
+# ver las ultimas situaciones laborales
+situaciones_laborales <- c("Desocupado" , "Trabajador de tiempo completo" , "Trabajador de tiempo parcial")
+
+# POR NIVEL DE INSTRUCCION
+for(laburo in situaciones_laborales){
+  
+  # total
+  nacionalidad_total <- pba %>% filter(ultima_situacion_laboral_descripcion==laburo) %>%
+    group_by(anio_censo) %>% summarise("{laburo}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('anio_censo'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_pba %>% filter(ultima_situacion_laboral_descripcion==laburo) %>% 
+    group_by(anio_censo) %>% summarise("{laburo}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('anio_censo'))
+  
+}
+
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+
+### PRUEBA SUMAS
+# no da lo mismo para los primeros años, para los ultimos casi lo mismo. Uso las sumas
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por ultima_situacion_laboral_descripcion
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_Desocupado = Desocupado_total/(Desocupado_total + `Trabajador de tiempo completo_total` + `Trabajador de tiempo parcial_total`),
+            total_porcen_Trabajador_de_tiempo_completo = `Trabajador de tiempo completo_total`/(Desocupado_total + `Trabajador de tiempo completo_total` + `Trabajador de tiempo parcial_total`),
+            total_porcen_Trabajador_de_tiempo_parcial = `Trabajador de tiempo parcial_total`/(Desocupado_total + `Trabajador de tiempo completo_total` + `Trabajador de tiempo parcial_total`) )
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_Desocupado = Desocupado_droga/(Desocupado_droga + `Trabajador de tiempo completo_droga` + `Trabajador de tiempo parcial_droga`),
+            droga_porcen_Trabajador_de_tiempo_completo = `Trabajador de tiempo completo_droga`/(Desocupado_droga + `Trabajador de tiempo completo_droga` + `Trabajador de tiempo parcial_droga`),
+            droga_porcen_Trabajador_de_tiempo_parcial = `Trabajador de tiempo parcial_droga`/(Desocupado_droga + `Trabajador de tiempo completo_droga` + `Trabajador de tiempo parcial_droga`) )
+
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+presos_porcen23737_por_anio_prov.T
+
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_ultima_situacion_laboral.csv',row.names = FALSE)
+
+
+
+
+```
+
+
+Capacitacion laboral al ingresar
+---
+
+Solo para PBA
+
+```{r}
+### PRUEBAS NAs
+sum(is.na(pba %>% filter(anio_censo==2006) %>% pull(capacitacion_laboral_al_ingresar_descripcion)))
+# hay 47 nas en 2019 pero muchos al principio
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- pba %>%
+  group_by(anio_censo) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_pba %>% 
+  group_by(anio_censo) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo'))
+
+
+# ver las ultimas situaciones laborales
+capacitaciones_laborales <- c('No tiene ni oficio ni profesión', 'Tiene algún oficio', 'Tiene alguna profesión')
+
+# POR NIVEL DE INSTRUCCION
+for(capacitacion in capacitaciones_laborales){
+  
+  # total
+  nacionalidad_total <- pba %>% filter(capacitacion_laboral_al_ingresar_descripcion==capacitacion) %>%
+    group_by(anio_censo) %>% summarise("{capacitacion}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('anio_censo'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_pba %>% filter(capacitacion_laboral_al_ingresar_descripcion==capacitacion) %>% 
+    group_by(anio_censo) %>% summarise("{capacitacion}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('anio_censo'))
+  
+}
+
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+### PRUEBAS SUMAS
+# uso las sumas
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por capacitacion_laboral_al_ingresar_descripcion
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_No_tiene_ni_oficio_ni_profesión = `No tiene ni oficio ni profesión_total`/(`No tiene ni oficio ni profesión_total` + `Tiene algún oficio_total` + `Tiene alguna profesión_total`),
+            total_porcen_Tiene_algún_oficio = `Tiene algún oficio_total`/(`No tiene ni oficio ni profesión_total` + `Tiene algún oficio_total` + `Tiene alguna profesión_total`),
+            total_porcen_Tiene_alguna_profesión = `Tiene alguna profesión_total`/(`No tiene ni oficio ni profesión_total` + `Tiene algún oficio_total` + `Tiene alguna profesión_total`) )
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_No_tiene_ni_oficio_ni_profesión = `No tiene ni oficio ni profesión_droga`/(`No tiene ni oficio ni profesión_droga` + `Tiene algún oficio_droga` + `Tiene alguna profesión_droga`),
+            droga_porcen_Tiene_algún_oficio = `Tiene algún oficio_droga`/(`No tiene ni oficio ni profesión_droga` + `Tiene algún oficio_droga` + `Tiene alguna profesión_droga`),
+            droga_porcen_Tiene_alguna_profesión = `Tiene alguna profesión_droga`/(`No tiene ni oficio ni profesión_droga` + `Tiene algún oficio_droga` + `Tiene alguna profesión_droga`) )
+
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+presos_porcen23737_por_anio_prov.T
+
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_capacitacion_laboral.csv',row.names = FALSE)
+
+
+```
+
+
+Mujer con hijos mujer_tiene_hijos_intramuro
+---
+
+Solo PBA 
+
+```{r}
+### PRUEBAS NAs
+sum(is.na(pba %>% filter(genero_descripcion=='Femenino' & anio_censo==2019) %>% pull(mujer_tiene_hijos_intramuro)))
+sum(is.na(pba %>% filter(genero_descripcion=='Femenino' & anio_censo==2006) %>% pull(mujer_tiene_hijos_intramuro)))
+# no hay NAs
+
+# cantidad de presos totales
+presos_total_por_anio_prov <- pba %>% filter(genero_descripcion=='Femenino') %>%
+  group_by(anio_censo) %>% summarise(presos_totales= n())
+
+# cantidad de presos droga por año y provincia
+presos_ley23737_por_anio_prov <- ley23737_pba %>% filter(genero_descripcion=='Femenino') %>%
+  group_by(anio_censo) %>% summarise(presos_ley23737= n())
+
+# joineo
+presos_porcen23737_por_anio_prov <- presos_total_por_anio_prov %>% inner_join(presos_ley23737_por_anio_prov, by=c('anio_censo'))
+
+
+# ver las ultimas situaciones laborales
+mujer_con_hijos <- c('0','1')
+
+# POR SI TIENE HIJO O NO
+for(hijo in mujer_con_hijos){
+  
+  # total
+  nacionalidad_total <- pba %>% filter(mujer_tiene_hijos_intramuro==hijo & genero_descripcion=='Femenino') %>%
+    group_by(anio_censo) %>% summarise("{hijo}_total":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_total,by=c('anio_censo'))
+  
+  # drogas
+  nacionalidad_droga <- ley23737_pba %>% filter(mujer_tiene_hijos_intramuro==hijo & genero_descripcion=='Femenino') %>% 
+    group_by(anio_censo) %>% summarise("{hijo}_droga":= n())
+  presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+    left_join(nacionalidad_droga,by=c('anio_censo'))
+}
+
+
+# reemplazo los NA con 0
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace(is.na(.), 0)
+
+
+### PRUEBA SUMAS
+# da lo mismo asi q uso presos_total y droga
+
+
+####### calculo porcentajes (sin *100)
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(porcen_ley23737 = (presos_ley23737/presos_totales))
+
+
+# del total de delitos, que porcentaje por mujer_tiene_hijos_intramuro
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            total_porcen_No_tiene_hijos = `0_total`/(presos_totales),
+            total_porcen_Tiene_hijos = `1_total`/(presos_totales) )
+      
+
+# de delitos droga, que porcentaje por nacionalidad
+presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
+  mutate(
+            droga_porcen_No_tiene_hijos = `0_droga`/(presos_ley23737),
+            droga_porcen_Tiene_hijos = `1_droga`/(presos_ley23737) )
+
+
+presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
+colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
+presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
+presos_porcen23737_por_anio_prov.T
+
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_mujer_hijos_intramuro.csv',row.names = FALSE)
+
+
+```
+
+```{r}
+
+```
+
+```{r}
 
 ```
 

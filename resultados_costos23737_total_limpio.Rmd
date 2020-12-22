@@ -17,6 +17,7 @@ options(scipen = 999)
 
 Aclaraciones metodológicas: 
 ---
+
 Para la construcción de esta información, trabajamos con los sueldos de  lxs magistradxs de Poder Judicial y Ministerio Público vinculados con la investigación y juzgamiento de los delitos de la ley 23.737 (más abajo, se especifica la cantidad por instancia y categoría en la escala salarial), agregándole a cada magistradx  1 secretarix y 1 auxiliar letradx. Por falta de información, no fue posible considerar a la totalidad de lxs funcionarixs y empleadxs. 
 Por esta misma razón, tampoco se incluyó a Suprema Corte y Juzgados de Ejecución ni en general a cualquier otro gasto corriente que no tenga que ver con sueldos como es el papel, internet, luz, pericias, gastos de transporte, mantenimiento, etcétera. 
 
@@ -751,7 +752,7 @@ ggplot(data_plotear, aes(x=anio_censo,y=porcentaje,color=tipo_delito)) + geom_li
 prueba_BA_proce <- read_csv('/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/prueba_BA_proce.csv')
 
 ggplot(prueba_BA_proce, aes(x=anio_censo,y=procesados_porcen)) + geom_line() + geom_point() +
-    labs(title="Diferencia de porcentajes de procesados PBA",x="Año de censo", y = "Porcentajes procesados")
+    labs(title="Porcentajes de procesados PBA",x="Año de censo", y = "Porcentajes procesados")
 ```
 
 
