@@ -259,8 +259,37 @@ presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% replace
 presos_porcen23737_por_anio_prov
 ```
 
+#### plots genero 2019
+
+Armar uno o un par de gráficos donde se observe con claridad: 
+
+- El altísimo porcentaje de mujeres que están presas por estos delitos sobre el total de mujeres presas; en algunos casos, como por ejemplo, entre ríos es el 60%.
+- Que el porcentaje de mujeres en delitos ley 23.737 es mayor al porcentaje general en la relación varones/mujeres privadxs de libertad; 
 
 ```{r}
+data_plot_genero <- presos_porcen23737_por_anio_prov %>% filter(anio_censo==2019) %>% 
+  mutate(porcen_ley23737 = porcen_ley23737*100, 
+         mujeres_porcen_droga = mujeres_porcen_droga*100)
+data_plot_genero <- data_plot_genero %>%
+  pivot_longer(c(porcen_ley23737,mujeres_porcen_droga), names_to='tipo', values_to='cantidad')
+
+ggplot(data_plot_genero, aes(x=tipo, y=cantidad, fill=tipo)) + geom_boxplot(notch=FALSE) + 
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=1) + 
+  labs(title="Porcentajes de presos/as por ley 23737 según sean mujeres o general (2019)",x="Tipo (mujeres o presos/as general)", y = "Porcentaje de presos/as por ley 23.737 (%)") + theme_minimal()
+
+###
+
+data_plot_genero <- presos_porcen23737_por_anio_prov %>%
+  mutate(porcen_ley23737 = porcen_ley23737*100, 
+         mujeres_porcen_droga = mujeres_porcen_droga*100)
+data_plot_genero <- data_plot_genero %>% 
+  group_by(anio_censo) %>% summarise(mujeres_porcen_droga = mean(mujeres_porcen_droga),
+                                     general_porcen_droga = mean(porcen_ley23737)) %>%
+  pivot_longer(c(mujeres_porcen_droga,general_porcen_droga), names_to='Tipo',values_to='Porcentaje')
+
+ggplot(data_plot_genero, aes(x=anio_censo, y=Porcentaje, color=Tipo)) + geom_line() + geom_point() +
+  labs(title="Evolución temporal del porcentaje de presos/as por ley 23737 según sean mujeres o general",x="Año", y = "Porcentaje de presos/as por ley 23.737 (%)")  + theme_minimal() + theme(plot.title = element_text(size=11))
+
 
 ```
 
@@ -502,7 +531,6 @@ NOdroga_reinci <- BA_reinci %>%
     ((delito5_descripcion!='Infracción ley n° 23.737 (estupefacientes)') | (is.na(delito5_descripcion)))) 
 ```
 
-Saco los numeros y porcentajes de procesados para los no droga
 
 ```{r}
 
@@ -529,11 +557,8 @@ droga_reinci <- BA_reinci %>%
             delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
             delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
 
-
 ```
 
-
-Saco los numeros y porcentajes de procesados para los de droga
 
 ```{r}
 
@@ -565,7 +590,7 @@ reinci_porcen_todos
 data_plotear_reinci <- reinci_porcen_todos %>% gather(tipo_delito, porcentaje_reinci, c(reinci_porcen_droga,reinci_porcen_NOdroga),factor_key=TRUE) %>% select(c(anio_censo, tipo_delito, porcentaje_reinci))
 
 ggplot(data_plotear_reinci, aes(x=anio_censo,y=porcentaje_reinci,color=tipo_delito)) + geom_line() + geom_point() +
-    labs(title="Porcentajes de reincidentes entre drogas y no drogas (PBA)",x="Año de censo", y = "Porcentajes de reincidentes (%)")
+    labs(title="Porcentajes de reincidentes entre drogas y no drogas (PBA)",x="Año de censo", y = "Porcentajes de reincidentes (%)") + theme_minimal()
 
 ```
 
@@ -578,10 +603,33 @@ reinci_separado_droga <- droga_reinci %>% group_by(anio_censo,es_reincidente_des
 
 # write.csv(reinci_separado_droga, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/reinci_separado_droga.csv')
 
-ggplot(reinci_separado_droga, aes(x=anio_censo,y=cantidad,color=es_reincidente_descripcion)) + geom_line() + geom_point() + labs(title="Cantidad de presos/as por droga segun reincidencia (PBA)",x="Año de censo", y = "Cantidad de presos/as")
+ggplot(reinci_separado_droga, aes(x=anio_censo,y=cantidad,color=es_reincidente_descripcion)) + geom_line() + geom_point() + labs(title="Cantidad de presos/as por 23.737 segun reincidencia (PBA)",x="Año de censo", y = "Cantidad de presos/as") + theme_minimal()
 
 ```
 
+#### plots reincidentes
+
+Solo PBA 2019 ley 23737
+
+```{r}
+
+data_plot_nacionalidad_1 <- presos_porcen23737_por_anio_prov %>% filter(provincia_descripcion=='Buenos Aires') %>%
+  pivot_longer(c(Argentina_droga,Paraguaya_droga,Peruana_droga,Boliviana_droga,Uruguaya_droga, Chilena_droga , Brasileña_droga, Colombiana_droga, Otras_droga), names_to='País', values_to='Cantidad') %>%
+  mutate(País= str_remove(País, '_droga')) %>% select(c(País,Cantidad))
+
+# library(stringr)
+data_plot_nacionalidad_2 <- presos_porcen23737_por_anio_prov %>% filter(provincia_descripcion=='Buenos Aires') %>%
+  pivot_longer(c("droga_porcen_Argentina" , "droga_porcen_Paraguaya" , "droga_porcen_Boliviana" , "droga_porcen_Peruana",  "droga_porcen_Uruguaya"  , "droga_porcen_Chilena"  ,  "droga_porcen_Brasileña" , "droga_porcen_Colombiana", "droga_porcen_Otras" ), names_to='País', values_to='Porcentaje') %>% mutate(Porcentaje=round(Porcentaje*100,1), País= str_remove(País, '^droga_porcen_')) %>% select(c(País,Porcentaje))
+
+data_plot_nacionalidad <- data_plot_nacionalidad_1 %>% inner_join(data_plot_nacionalidad_2, by='País')
+
+
+ggplot(data_plot_nacionalidad, aes(x=reorder(País,Porcentaje),y=Porcentaje, fill=Porcentaje)) + geom_bar(stat='identity') + 
+  geom_text(aes(label=paste0(Porcentaje,'% (',Cantidad,')')), position=position_dodge(width=0.9), hjust=-0.1, vjust=0) + coord_flip() + 
+  ylim(0.0,105) + labs(title="Nacionalidad de presos/as por ley 23.737 (PBA 2019)",x="Nacionalidades", y = "Porcentaje y cantidades") +
+  theme(legend.position = "none") 
+
+```
 
 
 # CABA
@@ -608,18 +656,6 @@ delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)'))
 
 Nacionalidad
 ---
-
-```{r}
-
-# ley 23737
-ley23737_provs <- provinciales %>%
-  
-  filter((delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito2_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | 
-         delito3_descripcion=='Infracción ley n° 23.737 (estupefacientes)' | delito4_descripcion=='Infracción ley n° 23.737 (estupefacientes)' |
-         delito5_descripcion=='Infracción ley n° 23.737 (estupefacientes)')) 
-  
-```
-
 
 #### Hacer de todas las provs en 2019 (esta ok)
 ```{r}
@@ -704,11 +740,37 @@ Paraguaya_droga/(presos_ley23737),
 presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
 colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
 presos_porcen23737_por_anio_prov.T <- presos_porcen23737_por_anio_prov.T[-1,]
-presos_porcen23737_por_anio_prov.T
+presos_porcen23737_por_anio_prov
 
-write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_2019_provs_nacionalidades.csv',row.names = FALSE)
+# write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_2019_provs_nacionalidades.csv',row.names = FALSE)
 ```
 
+#### plots nacionalidad
+
+Solo PBA. Un gráfico donde se vea la información que esta a continuación. Diría que se vea sobre todo los porcentajes y entre paréntesis los números absolutos. 
+```{r}
+
+data_plot_nacionalidad_1 <- presos_porcen23737_por_anio_prov %>% filter(provincia_descripcion=='Buenos Aires') %>%
+  pivot_longer(c(Argentina_droga,Paraguaya_droga,Peruana_droga,Boliviana_droga,Uruguaya_droga, Chilena_droga , Brasileña_droga, Colombiana_droga, Otras_droga), names_to='País', values_to='Cantidad') %>%
+  mutate(País= str_remove(País, '_droga')) %>% select(c(País,Cantidad))
+
+# library(stringr)
+data_plot_nacionalidad_2 <- presos_porcen23737_por_anio_prov %>% filter(provincia_descripcion=='Buenos Aires') %>%
+  pivot_longer(c("droga_porcen_Argentina" , "droga_porcen_Paraguaya" , "droga_porcen_Boliviana" , "droga_porcen_Peruana",  "droga_porcen_Uruguaya"  , "droga_porcen_Chilena"  ,  "droga_porcen_Brasileña" , "droga_porcen_Colombiana", "droga_porcen_Otras" ), names_to='País', values_to='Porcentaje') %>% mutate(Porcentaje=round(Porcentaje*100,1), País= str_remove(País, '^droga_porcen_')) %>% select(c(País,Porcentaje))
+
+data_plot_nacionalidad <- data_plot_nacionalidad_1 %>% inner_join(data_plot_nacionalidad_2, by='País')
+
+
+ggplot(data_plot_nacionalidad, aes(x=reorder(País,Porcentaje),y=Porcentaje, fill=Porcentaje)) + geom_bar(stat='identity') + 
+  geom_text(aes(label=paste0(Porcentaje,'% (',Cantidad,')')), position=position_dodge(width=0.9), hjust=-0.1, vjust=0) + coord_flip() + 
+  ylim(0.0,105) + labs(title="Nacionalidad de presos/as por ley 23.737 (PBA 2019)",x="Nacionalidades", y = "Porcentaje y cantidades") +
+  theme(legend.position = "none")  + theme_minimal()
+
+```
+
+```{r}
+colnames(presos_porcen23737_por_anio_prov)
+```
 
 #### Nacionalidades de PBA por año (esta ok)
 
@@ -872,45 +934,45 @@ presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>%
 # del total de delitos, que porcentaje por nacionalidad
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
   mutate(
-            total_porcen_Primario_incompleto = `Primario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Primario_completo = `Primario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Secundario_incompleto = `Secundario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Secundario_completo = `Secundario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Ninguno = Ninguno_total/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Universitario_completo = `Universitario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Universitario_incompleto = `Universitario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Terciario_completo = `Terciario completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Terciario_incompleto = `Terciario incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Polimodal_Incompleto = `Polimodal Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_Polimodal_Completo = `Polimodal Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_3_Completo = `EGB 3 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_2_Completo = `EGB 2 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_1_Completo = `EGB 1 Completo_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
-            total_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_total`/(`Primario incompleto_total`+ `Primario incompleto_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`)  )
+            total_porcen_Primario_incompleto = `Primario incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Primario_completo = `Primario completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Secundario_incompleto = `Secundario incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Secundario_completo = `Secundario completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Ninguno = Ninguno_total/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Universitario_completo = `Universitario completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Universitario_incompleto = `Universitario incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Terciario_completo = `Terciario completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Terciario_incompleto = `Terciario incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Polimodal_Incompleto = `Polimodal Incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_Polimodal_Completo = `Polimodal Completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_3_Completo = `EGB 3 Completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_2_Completo = `EGB 2 Completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_1_Completo = `EGB 1 Completo_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`),
+            total_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_total`/(`Primario incompleto_total`+ `Primario completo_total` + `Secundario incompleto_total` + `Secundario completo_total` + Ninguno_total + `Universitario completo_total` + `Universitario incompleto_total` + `Terciario completo_total` + `Terciario incompleto_total` + `Polimodal Incompleto_total` +`Polimodal Completo_total` +  `EGB 3 Completo_total` + `EGB 3 Incompleto_total` + `EGB 2 Completo_total` + `EGB 2 Incompleto_total` + `EGB 1 Completo_total` + `EGB 1 Incompleto_total`)  )
       
 
 # de delitos droga, que porcentaje por nacionalidad
 presos_porcen23737_por_anio_prov <- presos_porcen23737_por_anio_prov %>% 
   mutate(
-            droga_porcen_Primario_incompleto = `Primario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Primario_completo = `Primario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Secundario_incompleto = `Secundario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Secundario_completo = `Secundario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Ninguno = Ninguno_droga/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Universitario_completo = `Universitario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Universitario_incompleto = `Universitario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Terciario_completo = `Terciario completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Terciario_incompleto = `Terciario incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Polimodal_Incompleto = `Polimodal Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_Polimodal_Completo = `Polimodal Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_3_Completo = `EGB 3 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_2_Completo = `EGB 2 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_1_Completo = `EGB 1 Completo_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
-            droga_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario incompleto_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`)  )
+            droga_porcen_Primario_incompleto = `Primario incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Primario_completo = `Primario completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Secundario_incompleto = `Secundario incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Secundario_completo = `Secundario completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Ninguno = Ninguno_droga/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Universitario_completo = `Universitario completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Universitario_incompleto = `Universitario incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Terciario_completo = `Terciario completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Terciario_incompleto = `Terciario incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Polimodal_Incompleto = `Polimodal Incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_Polimodal_Completo = `Polimodal Completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_3_Completo = `EGB 3 Completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_3_Incompleto = `EGB 3 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_2_Completo = `EGB 2 Completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_2_Incompleto = `EGB 2 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_1_Completo = `EGB 1 Completo_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`),
+            droga_porcen_EGB_1_Incompleto = `EGB 1 Incompleto_droga`/(`Primario incompleto_droga`+ `Primario completo_droga` + `Secundario incompleto_droga` + `Secundario completo_droga` + Ninguno_droga + `Universitario completo_droga` + `Universitario incompleto_droga` + `Terciario completo_droga` + `Terciario incompleto_droga` + `Polimodal Incompleto_droga` +`Polimodal Completo_droga` +  `EGB 3 Completo_droga` + `EGB 3 Incompleto_droga` + `EGB 2 Completo_droga` + `EGB 2 Incompleto_droga` + `EGB 1 Completo_droga` + `EGB 1 Incompleto_droga`)  )
 
 presos_porcen23737_por_anio_prov.T <- as_tibble(t(presos_porcen23737_por_anio_prov), rownames = "row_names")
 colnames(presos_porcen23737_por_anio_prov.T) <- head(presos_porcen23737_por_anio_prov.T,1)
@@ -925,6 +987,29 @@ presos_porcen23737_por_anio_prov.T
 
 ```
 
+#### plots nivel de instruccion
+
+Solo PBA. Solo 2019. Solo ley 23.737. Un grafico con la siguiente información donde se vean bien los porcentajes y entre paréntesis los números absolutos. Las categorías que representan menos de un uno por ciento agrúpalas en un “otros”.
+```{r}
+
+data_plot_instruccion_1 <- presos_porcen23737_por_anio_prov %>% filter(anio_censo==2019) %>%
+  pivot_longer(c("Primario incompleto_droga", "Primario completo_droga", "Secundario incompleto_droga", 'Ninguno_droga', "Universitario completo_droga", "Secundario completo_droga" , "Terciario completo_droga" , "Terciario incompleto_droga",'Universitario incompleto_droga'), names_to='Nivel_instruccion', values_to='Cantidad') %>%
+  mutate(Nivel_instruccion= str_remove(Nivel_instruccion, '_droga')) %>% select(c(Nivel_instruccion,Cantidad)) 
+
+# library(stringr)
+data_plot_instruccion_2 <- presos_porcen23737_por_anio_prov %>% filter(anio_censo==2019) %>%
+  pivot_longer(c("droga_porcen_Primario_incompleto", "droga_porcen_Primario_completo", "droga_porcen_Secundario_incompleto"   , "droga_porcen_Secundario_completo", "droga_porcen_Ninguno", "droga_porcen_Universitario_completo", "droga_porcen_Universitario_incompleto", "droga_porcen_Terciario_completo", "droga_porcen_Terciario_incompleto", "droga_porcen_Polimodal_Incompleto", "droga_porcen_Polimodal_Completo"), names_to='Nivel_instruccion', values_to='Porcentaje') %>% mutate(Porcentaje=round(Porcentaje*100,1), Nivel_instruccion= str_remove(Nivel_instruccion, '^droga_porcen_')) %>% select(c(Nivel_instruccion,Porcentaje)) %>% mutate(Nivel_instruccion = str_replace(Nivel_instruccion, '_',' '))
+
+data_plot_instruccion <- data_plot_instruccion_1 %>% inner_join(data_plot_instruccion_2, by='Nivel_instruccion')
+
+
+ggplot(data_plot_instruccion, aes(x=reorder(Nivel_instruccion,Porcentaje),y=Porcentaje, fill=Porcentaje)) + geom_bar(stat='identity') + 
+  geom_text(aes(label=paste0(Porcentaje,'% (',Cantidad,')')), position=position_dodge(width=0.9), hjust=-0.1, vjust=0) + coord_flip() + 
+  ylim(0.0,50) + labs(title="Nivel de instrucción de presos/as por ley 23.737 (PBA 2019)",x="Nivel de instrucción", y = "Porcentaje y cantidades") + theme_minimal() +
+  theme(legend.position = "none") 
+
+colnames(presos_porcen23737_por_anio_prov)
+```
 
 
 Ultima situacion laboral
@@ -1006,9 +1091,31 @@ presos_porcen23737_por_anio_prov.T
 
 # write.csv(presos_porcen23737_por_anio_prov.T, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/costo_ley23737_pba/spb/presos_porcen23737_anios_PBA_ultima_situacion_laboral.csv',row.names = FALSE)
 
+```
+
+#### plots situacion laboral
+
+Solo PBA 2019 LEY 23.737
+
+```{r}
+
+data_plot_situacionlaboral_1 <- presos_porcen23737_por_anio_prov %>% filter(anio_censo==2019) %>%
+  pivot_longer(c("Desocupado_droga", "Trabajador de tiempo completo_droga", "Trabajador de tiempo parcial_droga"), names_to='Situacion_laboral', values_to='Cantidad') %>%
+  mutate(Situacion_laboral= str_remove(Situacion_laboral, '_droga')) %>% select(c(Situacion_laboral,Cantidad)) 
+
+# library(stringr)
+data_plot_situacionlaboral_2 <- presos_porcen23737_por_anio_prov %>% filter(anio_censo==2019) %>%
+  pivot_longer(c("droga_porcen_Desocupado", "droga_porcen_Trabajador_de_tiempo_completo", "droga_porcen_Trabajador_de_tiempo_parcial" ), names_to='Situacion_laboral', values_to='Porcentaje') %>% mutate(Porcentaje=round(Porcentaje*100,1), Situacion_laboral= str_remove(Situacion_laboral, '^droga_porcen_')) %>% select(c(Situacion_laboral,Porcentaje)) %>% mutate(Situacion_laboral = str_replace_all(Situacion_laboral, '_',' '))
+
+data_plot_situacionlaboral <- data_plot_situacionlaboral_1 %>% inner_join(data_plot_situacionlaboral_2, by='Situacion_laboral')
 
 
+ggplot(data_plot_situacionlaboral, aes(x=reorder(Situacion_laboral,Porcentaje),y=Porcentaje, fill=Porcentaje)) + geom_bar(stat='identity') + 
+  geom_text(aes(label=paste0(Porcentaje,'% (',Cantidad,')')), position=position_dodge(width=0.9), hjust=-0.1, vjust=0) + coord_flip() + 
+  ylim(0.0,60) + labs(title="Última situación laboral de presos/as por ley 23.737 (PBA 2019)",x="Situación laboral", y = "Porcentaje y cantidades") +
+  theme(legend.position = "none") 
 
+colnames(presos_porcen23737_por_anio_prov)
 ```
 
 
@@ -1173,6 +1280,8 @@ presos_porcen23737_por_anio_prov.T
 
 
 ```
+
+
 
 ```{r}
 
