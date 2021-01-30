@@ -24,8 +24,9 @@ Datasets generales a usar
 ---
 - provinciales : todos delitos, todas provincias (seleccionadas)
 - pba : todos delitos, PBA
-- ley23737_provs : delitos 23737, todas las provincias (seleccionadas)
 - ley23737_pba : delitos 23737, PBA
+- ley23737_provs : delitos 23737, todas las provincias (seleccionadas)
+- NO23737_provs : delitos menos 23737, todas las provincias (seleccionadas)
 - todos_2019 : todos los delitos de todas las provincias (no solo seleccionadas)
 
 ```{r}
@@ -42,7 +43,8 @@ provinciales <- sneep %>%
                 (provincia_descripcion=='Formosa' & anio_censo>=2015) |
                 (provincia_descripcion=='Salta' & anio_censo>=2014) |
                 (provincia_descripcion=='Entre Rios' & anio_censo>=2018) |
-                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018))
+                (provincia_descripcion=='Santiago del Estero' & anio_censo>=2018)) %>%
+  mutate(DELITO = ifelse(delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)','delito_23737','delito_No_23737'))
 
 
 # delitos totales de la PBA
@@ -59,6 +61,10 @@ ley23737_pba <- pba %>% filter(
 # ley 23737 para todas las provincias
 ley23737_provs <- provinciales %>% filter(
       delito1_descripcion=='Infracción ley n° 23.737 (estupefacientes)') 
+
+# delitos por NO ley 23737 para las provincias
+NO23737_provs <- provinciales %>%
+  filter((delito1_descripcion!='Infracción ley n° 23.737 (estupefacientes)'))
           
 
 todos_2019 <- sneep %>% filter(reparticion_descripcion=='Provincial') %>% filter(anio_censo==2019)
@@ -183,18 +189,78 @@ presos_porcen23737_por_prov_18 <- presos_total_por_prov_18 %>%
   inner_join(presos_ley23737_por_prov_18, by=c('provincia_descripcion')) %>% 
   mutate(porcentaje_ley23737= presos_ley23737/presos_totales)
 
-write.xlsx(presos_porcen23737_por_prov_18,'/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/resultados complementarios/presos_porcen23737_2018.xlsx',row.names = FALSE)
+#write.xlsx(presos_porcen23737_por_prov_18,'/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/resultados complementarios/presos_porcen23737_2018.xlsx',row.names = FALSE)
 
 
 ```
 
 
+
+
+
+
+
+
+
+Analisis para todas las provincias (DROGA Y NO DROGA)
+---
+
+Desde 2016
+Buenos Aires, Chaco, Cordoba, Formosa, Salta, Entre Rios (18/19), Santiago del Estero (18/19), CABA (19)
+
+#### Cantidad de presos NO DROGA y por droga, por año y provincia
 
 ```{r}
+# agrupo todo junto (año, prov y delito (droga y no droga))
+cantidad_presos_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion,DELITO) %>% 
+  summarise(cantidad= n())
+
+# spread para operar entre columnas
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% spread(DELITO,cantidad)
+
+# calculo porcentaje
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% 
+  mutate(porcen_ley23737 = (delito_23737/(delito_23737+delito_No_23737)))
+
+# calculo cambios porcentuales por año
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% group_by(provincia_descripcion) %>%
+  mutate(cambioporc_no23737 = (delito_No_23737-lag(delito_No_23737))/lag(delito_No_23737) ,
+         cambioporc_23737 = (delito_23737-lag(delito_23737))/lag(delito_23737))
+
+# cambio porcentual acumulado
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% group_by(provincia_descripcion) %>%
+  mutate(cambioporc_no23737_acum = cumsum(replace_na(cambioporc_no23737,0)),
+         cambioporc_23737_acum = cumsum(replace_na(cambioporc_23737,0)))
+
+#write.xlsx(presos_porcen23737_por_anio_prov, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/resultados complementarios/cantidades_droga_nodroga.xlsx',row.names = FALSE)
+# despues sigo en excel haciendo los cambios porcentuales, etc.
+
+print(cantidad_presos_anio_prov)
+```
+
+#### Graficar por separado (facet) la evolucion del cambio porcentual de presos NO DROGA y por 23737
+```{r fig20, fig.height = 10, fig.width = 8.5}
+# acumulado
+data_plot_pctch <- cantidad_presos_anio_prov %>%
+  mutate(cambioporc_no23737_acum = cambioporc_no23737_acum*100, 
+         cambioporc_23737_acum = cambioporc_23737_acum*100)
+data_plot_pctch <- data_plot_pctch %>% 
+  pivot_longer(c(cambioporc_no23737_acum,cambioporc_23737_acum), names_to='Tipo',values_to='Porcentaje') %>%
+  mutate(Tipo= ifelse(Tipo=='cambioporc_no23737_acum','No Ley 23737','Ley 23737'))
+
+ggplot(data_plot_pctch, aes(x=anio_censo,y=Porcentaje, color=Tipo)) + geom_line() + geom_point() +
+    labs(title="Cambio porcentual acumulado de presxs según sean por ley 23737 o no ley 23737",x="Año de censo", y = "Cambio porcentual acumulado (%)") + facet_wrap(vars(provincia_descripcion), ncol=1, scales = "free_y")
+
 
 ```
 
-Analisis para todas las provincias
+
+
+
+
+
+
+Analisis para todas las provincias (DROGA Y TOTAL)
 ---
 
 Desde 2016
@@ -255,7 +321,7 @@ ggplot(presos_porcen23737_por_anio_prov, aes(x=anio_censo,y=porcen_ley23737*100)
 ```
 
 #### Graficar por separado (facet) la evolucion del cambio porcentual de presos totales y por 23737
-```{r}
+```{r fig2, fig.height = 10, fig.width = 8}
 # acumulado
 data_plot_pctch <- presos_porcen23737_por_anio_prov %>%
   mutate(cambioporc_totales_acum = cambioporc_totales_acum*100, 
@@ -265,10 +331,58 @@ data_plot_pctch <- data_plot_pctch %>%
   mutate(Tipo= ifelse(Tipo=='cambioporc_totales_acum','Todos delitos','Ley 23737'))
 
 ggplot(data_plot_pctch, aes(x=anio_censo,y=Porcentaje, color=Tipo)) + geom_line() + geom_point() +
-    labs(title="Cambio porcentual acumulado de presxs según sean por ley 23737 o total",x="Año de censo", y = "Cambio porcentual acumulado (%)") + facet_wrap(vars(provincia_descripcion), ncol=2)
+    labs(title="Cambio porcentual acumulado de presxs según sean por ley 23737 o total",x="Año de censo", y = "Cambio porcentual acumulado (%)") + facet_wrap(vars(provincia_descripcion), ncol=1, scales = "free_y")
 
 
 ```
+
+
+
+
+POR GENERO (NO DROGA Y DROGA)
+
+```{r}
+# agrupo todo junto (año, prov y delito (droga y no droga))
+cantidad_presos_anio_prov <- provinciales %>% group_by(anio_censo,provincia_descripcion,genero_descripcion,DELITO) %>% 
+  summarise(cantidad= n())
+
+# spread para operar entre columnas
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% spread(DELITO,cantidad)
+
+# calculo porcentaje
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% 
+  mutate(genero_porcen_droga = (delito_23737/(delito_23737+delito_No_23737)))
+
+# calculo cambios porcentuales por año
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% group_by(provincia_descripcion) %>%
+  mutate(cambioporc_no23737 = (delito_No_23737-lag(delito_No_23737))/lag(delito_No_23737) ,
+         cambioporc_23737 = (delito_23737-lag(delito_23737))/lag(delito_23737))
+
+# cambio porcentual acumulado
+cantidad_presos_anio_prov <- cantidad_presos_anio_prov %>% group_by(provincia_descripcion) %>%
+  mutate(cambioporc_no23737_acum = cumsum(replace_na(cambioporc_no23737,0)),
+         cambioporc_23737_acum = cumsum(replace_na(cambioporc_23737,0)))
+
+#write.xlsx(presos_porcen23737_por_anio_prov, '/Users/lucaspecina/Desktop/Data/Planificacion Estrategica/costo_ley23737_pba/resultados complementarios/cantidades_droga_nodroga_genero.xlsx',row.names = FALSE)
+# despues sigo en excel haciendo los cambios porcentuales, etc.
+
+print(cantidad_presos_anio_prov)
+```
+
+```{r}
+data_plot_genero <- cantidad_presos_anio_prov %>%
+  mutate(genero_porcen_droga = genero_porcen_droga*100)
+
+ggplot(data_plot_genero, aes(x=anio_censo,y=genero_porcen_droga, color=genero_descripcion)) + geom_line() + geom_point() +
+    labs(title="Porcentaje (%) de presos/as por ley 23737 por provincia y género",x="Año de censo", y = "Porcentaje de presos por 23737 (%)") + facet_wrap(vars(provincia_descripcion), ncol=2)
+
+```
+
+
+
+
+
+
 
 
 Por provincia y por genero
